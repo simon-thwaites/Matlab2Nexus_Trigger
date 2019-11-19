@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MasterMaster xmlns:xsi="http://www.w3.org/2001/XMLSchema">
+   <!--Enter Trial Code. is REQUIRED!-->
+   <StudyCode>THA</StudyCode>
+   <!--Do you want to create a UR number field in master file?, defalt = '1'-->
+   <URNumber>1</URNumber>
+   <!--Do you want to create a DOB field in master file?, defalt = '1'-->
+   <DOB>1</DOB>
+   <!--Do you want to create a surname field in master file?, defalt = '1'-->
+   <Surname>1</Surname>
+   <!--Do you want to create a mass field in master file?, defalt = '1'-->
+   <Mass>1</Mass>
+   <!--Do you want to create a height field in master file?, defalt = '1'-->
+   <Height>1</Height>
+   <!--Trial names required to identify folders to process.-->
+   <TrialNames>Walking</TrialNames>
+   <!--Enter Ipsi_Contra, Single or Double.-->
+   <StudyDesign>Ipsi_Contra</StudyDesign>
+		<!-- If Ipsi_Contra or Single, State the Case side. -->
+		<CaseSide>Left</CaseSide>
+   <!--Recomended to store gait events in master file to speed up processing time.-->
+   <GaitEvents>1</GaitEvents>   
+   <Temporospatial>1</Temporospatial>   
+   <!--Enter all time points for study. Can't have symbols or begin with numbers e.g. Pre-op should be Preop.-->
+   <TimePoints>
+      <TimePointA>Preop</TimePointA>
+      <TimePointB>six_weeks</TimePointB>
+      <TimePointC>three_months</TimePointC>
+      <TimePointD>six_months</TimePointD>
+	  <TimePointE>five_years</TimePointE>
+   </TimePoints>
+   <!--Enter Number of participants. Number of participants dictates number of columns pre-assigned to master.-->
+   <nParticipants>50</nParticipants>
+   <!--Must be one of following: HOOS, WOMAC, KOOS.-->
+   <ClinicalOutcomeScore>
+      <ClinicalOutcomeScoreA>HOOS</ClinicalOutcomeScoreA>
+   </ClinicalOutcomeScore>
+   <InverseKinematics>1</InverseKinematics>
+   <!--If IKCoordinates is set to default, all model coordinates will be included.-->
+   <!-- Else, user can replace Default with custom and add a list below. Name of custom coords should match model coordinates.-->
+   <IKCoordinates>default</IKCoordinates>
+<!-- Example to list joint coordinates:.-->  
+   <JointCoordinates> pelvis_tilt</JointCoordinates>
+   <JointCoordinates> pelvis_list</JointCoordinates>   
+<!-- Axes range for y axis when plotting. Can be default or custom. If custom user should enter 2 numbers per coordinate for limits or 3 for min, interval, max.-->   
+   <IKSetAxes>default</IKSetAxes>
+   <AxesRange> 20:5:40</AxesRange>
+   <AxesRange> 40 70</AxesRange>   
+   <JRLoad>1</JRLoad>
+   <!--Enter all JRLoad expressions for study. See OpenSim output formats for more info-->
+   <JRLoadExpression>
+      <LoadA>hip_on_pelvis_in_femur</LoadA>
+      <LoadB>hip_on_femur_in_femur</LoadB>
+   </JRLoadExpression>
+   <MuscleAnalysis>1</MuscleAnalysis>
+    <!--See OpenSim output formats for more info-->
+</MasterMaster>
