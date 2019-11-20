@@ -1,5 +1,5 @@
 %% Main script for data acquisition 
-% 
+
 % ----------------------------------------------------------------------- %
 % Major Revisions:
 %   - 19/11/19 (created)

@@ -1,17 +1,17 @@
-function [ID, session] = participant_info_GUI()
+function [sessionString] = participant_info_GUI()
 %% Get particiapnt info for data collection
 % user to enter in GUI
 %   - participant  ID (w radio button selection for healthy/clinical)
 %   - comment field to store text as required during capture. 
 % ----------------------------------------------------------------------- %
 % Major Revisions:
-%   - 19/11/19 (created)
+%   - 19/11/19 (created, modified for SPN vs IPN data acquisition)
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
 % ----------------------------------------------------------------------- %
 
-% initialise GUI
+%% initialise GUI
 inputFig = figure('Tag',        'figTag', ...
                     'numbertitle', 'off', ...
                     'name',     'Participant Information', ...
@@ -20,112 +20,258 @@ inputFig = figure('Tag',        'figTag', ...
                     'toolbar',  'none',...
                     'menu',     'none');
                 
-% creates handles attached to inputFig
+%% creates handles attached to inputFig
 % returns a structure containing handles of objects in a figure, 
 % using their tags as fieldnames
 h.inputFig = guihandles(inputFig); 
 
-% define UI controls
+%% define GUI object positions (x-pos,y-pos, x-width, y-height)
+leftTextAlign = 5;
+leftObjectAlign = 130;
+textWidth = 100;
+objectWidth = 150;
+text_object_height = 15;
+
+cohort_radioText_pos = [ leftTextAlign , 200 , textWidth , text_object_height ];
+cohort_radio_pos = [ leftObjectAlign , 200 , objectWidth , text_object_height ;...
+                     leftObjectAlign+100 , 200 , objectWidth , text_object_height ];
+                
+nailRemoved_radioText_pos = [ leftTextAlign , 150 , textWidth , text_object_height ];
+nailRemoved_radio_pos = [ leftObjectAlign , 150 , objectWidth , text_object_height ;...
+                         leftObjectAlign+100 , 150 , objectWidth ,text_object_height ];
+                    
+timePoint_popupText_pos = [ leftTextAlign+7 , 100 , textWidth , text_object_height ];
+timePoint_popup_pos = [ leftObjectAlign , 100 , objectWidth , text_object_height ];
+
+IDtext_pos = [ leftTextAlign , 50 , textWidth , text_object_height ];
+IDtextInput_pos = [ leftObjectAlign , 50 , objectWidth , text_object_height ];
+
+generateSessionString_pushButton_pos = [ 320 , 180 , 150 , 40 ];
+sessionString_Text_pos = [ leftTextAlign + 2 , 10 , textWidth , text_object_height];
+sessionString_Display_pos = [ leftObjectAlign , 10 , objectWidth , text_object_height ];
+
+acquireData_pushButton_pos = [ 320 , 10 , 150 , 40 ];
+
+h.inputFig.sessionStringDisplay = ''; % intialise
+h.inputFig.sessionString.nail = '';
+
+%% initialise popup state value and string
+h.inputFig.popupValue = 1;
+h.inputFig.popupString_clinical = {'<Select time point>', '3months',...
+                                   '6months', '12months', '18months'};                          
+
+%% define UI controls
 h.inputFig.IDtext = uicontrol('Parent',    inputFig, ...
                     'Style',    'text',...
                     'Units',    'pixels', ...
                     'String',   'Participant ID:   ',...
-                    'Position', [10,200,100,15]);
+                    'Position', IDtext_pos);
 h.inputFig.IDtextInput = uicontrol('Parent',    inputFig, ...
                     'Style',    'edit',...
                     'Callback', @textCallBack,...
                     'Units',    'pixels', ...
                     'String',   'Enter Participant ID:   ',...
-                    'Position', [110,200,150,15]);               
-h.inputFig.radioText = uicontrol('Parent',    inputFig, ...
+                    'Position', IDtextInput_pos,...
+                    'visible',  'off');               
+h.inputFig.cohort_radioText = uicontrol('Parent',    inputFig, ...
                     'Style',    'text',...
                     'Units',    'pixels', ...
-                    'String',   'Select Session:   ',...
-                    'Position', [15,100,100,15]);
-h.inputFig.radio(1) = uicontrol('Parent',    inputFig, ...
+                    'String',   'Select cohort:   ',...
+                    'Position', cohort_radioText_pos);
+h.inputFig.cohort_radio(1) = uicontrol('Parent',    inputFig, ...
                     'Style',    'radiobutton', ...
-                    'Callback', @radioButtonCallback, ...
+                    'Callback', @cohort_radioButtonCallback, ...
                     'Units',    'pixels', ...
-                    'Position', [110,100,100,15], ...
+                    'Position', cohort_radio_pos(1,:), ...
                     'String',   'Healthy', ...
-                    'Value',    1);
-h.inputFig.radio(2) = uicontrol('Parent',    inputFig, ...
+                    'Value',    0);
+h.inputFig.cohort_radio(2) = uicontrol('Parent',    inputFig, ...
                     'Style',    'radiobutton', ...
-                    'Callback', @radioButtonCallback, ...
+                    'Callback', @cohort_radioButtonCallback, ...
                     'Units',    'pixels', ...
-                    'Position', [210,100,100,15], ...
+                    'Position', cohort_radio_pos(2,:), ...
                     'String',   'Clinical', ...
                     'Value',    0);
-h.inputFig.pushButton = uicontrol('Parent',    inputFig, ...
+% html string required for multiline text on button  
+% e.g., '<html>This is a multiline<br>string</html>'
+h.inputFig.generateSessionString_pushButton = uicontrol('Parent',    inputFig, ...
                     'style',    'pushbutton',...  
                     'units',    'pixels',...
-                    'position', [40,5,70,20],...
-                    'string',   'OK',...
-                    'callback', @pushButtonCallback);
+                    'position', generateSessionString_pushButton_pos,...
+                    'string',   'Generate Session String',...
+                    'callback', @generateSessionString_pushButtonCallback,...
+                    'visible',  'off');
+h.inputFig.nailRemoved_radioText = uicontrol('Parent',    inputFig, ...
+                    'Style',    'text',...
+                    'Units',    'pixels', ...
+                    'String',   'Nail removed:   ',...
+                    'Position', nailRemoved_radioText_pos);
+h.inputFig.nailRemoved_radio(1) = uicontrol('Parent',    inputFig, ...
+                    'Style',    'radiobutton', ...
+                    'Callback', @nailRemoved_radioButtonCallback, ...
+                    'Units',    'pixels', ...
+                    'Position', nailRemoved_radio_pos(1,:), ...
+                    'String',   'No', ...
+                    'Value',    1, ...
+                    'visible',  'off');
+h.inputFig.nailRemoved_radio(2) = uicontrol('Parent',    inputFig, ...
+                    'Style',    'radiobutton', ...
+                    'Callback', @nailRemoved_radioButtonCallback, ...
+                    'Units',    'pixels', ...
+                    'Position', nailRemoved_radio_pos(2,:), ...
+                    'String',   'Yes', ...
+                    'Value',    0,...
+                    'visible',  'off');
+h.inputFig.timePoint_popup = uicontrol('Parent',    inputFig, ...
+                    'Style',    'popup', ...
+                    'Units',    'pixels', ...
+                    'String',   h.inputFig.popupString_clinical, ...
+                    'Position', timePoint_popup_pos, ...
+                    'Value',    h.inputFig.popupValue, ...
+                    'Callback', @timePoint_popupCallback, ...
+                    'Visible',  'off');
+h.inputFig.timePoint_popupText = uicontrol('Parent',    inputFig, ...
+                    'Style',    'text',...
+                    'Units',    'pixels', ...
+                    'String',   'Select Timepoint:   ',...
+                    'Position', timePoint_popupText_pos);
+h.inputFig.sessionString_Text = uicontrol('Parent',    inputFig, ...
+                    'Style',    'text',...
+                    'Units',    'pixels', ...
+                    'String',   'Session String:   ',...
+                    'Position', sessionString_Text_pos);
+h.inputFig.sessionString_Display = uicontrol('Parent',    inputFig, ...
+                    'Style',    'text',...
+                    'Units',    'pixels', ...
+                    'String',   h.inputFig.sessionStringDisplay,...
+                    'Position', sessionString_Display_pos, ...
+                    'visible',  'off');                
+h.inputFig.acquireData_pushButton = uicontrol('Parent',    inputFig, ...
+                    'style',    'pushbutton',...  
+                    'units',    'pixels',...
+                    'position', acquireData_pushButton_pos,...
+                    'string',   'ACQUIRE DATA',...
+                    'callback', @acquireData_pushButtonCallback,...
+                    'visible',  'on');
+                
 h.inputFig.textEntered = 0;     % var to make sure Participant ID entered first 
 guidata(inputFig,h.inputFig);  % update handles
 uiwait(inputFig)
 inputData = get(0,'UserData');
 ID = inputData.ID;
-session = inputData.session;
+cohort = inputData.cohort;
 end
 
+%% CALLBACKS
+
+function cohort_radioButtonCallback(radio_object,~,~)
+h.inputFig = guidata(radio_object);
+% force only one button to be selected
+otherRadio = h.inputFig.cohort_radio(h.inputFig.cohort_radio ~= radio_object);
+set(otherRadio, 'Value', 0);
+
+% if clinical, make nail removed option visible
+if h.inputFig.cohort_radio(2).Value == 1 % clinical
+    set(h.inputFig.nailRemoved_radio(1),'visible', 'on');
+    set(h.inputFig.nailRemoved_radio(2),'visible', 'on');
+    set(h.inputFig.timePoint_popup,'visible','on', ...
+        'Value',1,'string',h.inputFig.popupString_clinical);
+    set(h.inputFig.IDtextInput,'visible','off','string','Enter Participant ID:   ');
+    h.inputFig.sessionString.cohort = 'CL';
+elseif h.inputFig.cohort_radio(2).Value == 0 && h.inputFig.cohort_radio(1).Value == 0
+    set(h.inputFig.IDtextInput,'visible','off','string','Enter Participant ID:   ');
+    set(h.inputFig.nailRemoved_radio(1),'visible', 'off','value',1);
+    set(h.inputFig.nailRemoved_radio(2),'visible', 'off','value',0);
+    set(h.inputFig.timePoint_popup,'visible','off','Value',0);
+    h.inputFig.sessionString.nail = '';
+else % healthy
+    set(h.inputFig.nailRemoved_radio(1),'visible', 'off','value',1);
+    set(h.inputFig.nailRemoved_radio(2),'visible', 'off','value',0);
+    set(h.inputFig.timePoint_popup,'visible','off','Value',0);
+    set(h.inputFig.IDtextInput,'visible','on','string','Enter Participant ID:   ');
+    set(h.inputFig.sessionString_Display,'visible','off');
+    h.inputFig.sessionString.cohort = 'HE';
+    h.inputFig.sessionString.timePoint = '';
+    h.inputFig.sessionString.nail = '';
+end
+set(h.inputFig.generateSessionString_pushButton,'visible','off')
+set(h.inputFig.sessionString_Display,'visible','off')
+guidata(radio_object,h.inputFig)
+end
+
+%%
+function nailRemoved_radioButtonCallback(radio_object,~,~)
+h.inputFig = guidata(radio_object);
+% force only one button to be selected
+otherRadio = h.inputFig.nailRemoved_radio(h.inputFig.nailRemoved_radio ~= radio_object);
+set(otherRadio, 'Value', 0);
+h.inputFig.sessionString.nail = ''; % empty string
+set(h.inputFig.timePoint_popup,'visible','on','Value',1);
+set(h.inputFig.IDtextInput,'visible','off','string','Enter Participant ID:   ');
+set(h.inputFig.generateSessionString_pushButton,'visible','off')
+set(h.inputFig.sessionString_Display,'visible','off')
+
+if h.inputFig.cohort_radio(2).Value == 1 % clinical, check nail
+    if h.inputFig.nailRemoved_radio(2).Value == 1 % nail has been removed
+        h.inputFig.sessionString.nail = '_NR';
+    end
+end
+guidata(radio_object,h.inputFig)
+end
+
+%%
+function timePoint_popupCallback(popup_object,~,~)
+h.inputFig = guidata(popup_object);
+h.inputFig.popupValue = popup_object.Value;     % get popup value 
+h.inputFig.popupString = popup_object.String;   % get popup string
+
+if h.inputFig.popupValue == 1
+    set(h.inputFig.IDtextInput,'visible','off');
+    h.inputFig.sessionString.timePoint = '';
+else
+    set(h.inputFig.IDtextInput,'visible','on');
+    h.inputFig.sessionString.timePoint = ['_',char(h.inputFig.popupString(h.inputFig.popupValue,:))]; % store selection
+end
+guidata(popup_object,h.inputFig)
+end
+
+%%
 function textCallBack(text_object,~,~)
 h.inputFig = guidata(text_object);
 h.inputFig.textEntered = 1;    % change to 1, allow other callbacks to run
-h.inputFig.participantID = h.inputFig.IDtextInput.String; 
+h.inputFig.sessionString.participantID = h.inputFig.IDtextInput.String; 
 %-------------------------------%
 % could make input string more robust here
 %-------------------------------%
-
+set(h.inputFig.generateSessionString_pushButton, 'visible', 'on');
 % stores the specified data in the figure's application data
 guidata(text_object,h.inputFig)
 end
 
-function radioButtonCallback(radio_bject,~,~)
-h.inputFig = guidata(radio_bject);
-% if handles.textEntered == 1
-%     % force only one button to be selected
-    otherRadio = h.inputFig.radio(h.inputFig.radio ~= radio_bject);
-    set(otherRadio, 'Value', 0);
-    % % find which button
-    % vals = get(handles.radio,'Value');
-    % checked = find([vals{:}]);
-    % switch checked
-    %     case 1
-    %         handles.session = 'Session 1';
-    %     case 2
-    %         handles.session = 'Session 2';
-    % end
-    % % store ID and session as matlab root UserData structure so it can be
-    % % accessed once the inputFig is closed by pushButtonCallback
-    % inputData = struct('ID',handles.participantID,'session',handles.session);
-    % set(0,'UserData',inputData);
-    guidata(radio_bject,h.inputFig)
-% else
-%     warndlg('Enter participant ID','!! Warning !!')
-% end
-end
-       
-function pushButtonCallback(pushButton_object,~,~)
-h.inputFig = guidata(pushButton_object);
-if h.pushButton.textEntered == 1
-   % find which button
-    vals = get( h.inputFig.radio,'Value');
-    checked = find([vals{:}]);
-    switch checked
-        case 1
-            h.pushButton.session = 'Healthy';
-        case 2
-            h.pushButton.session = 'Clinical';
-    end
-    % store ID and session as matlab root UserData structure so it can be
-    % accessed once the inputFig is closed by pushButtonCallback
-    inputData = struct('ID',h.textCallBack.participantID,'session',h.pushButton.session);
-    set(0,'UserData',inputData);
-    guidata(pushButton_object,h.pushButton)
-    close(get(pushButton_object,'Parent'))    % close parent of pushButton_object (inputFig)  
+%%
+function generateSessionString_pushButtonCallback(generateSessionString_pushButton_object,~,~)
+h.inputFig = guidata(generateSessionString_pushButton_object);
+
+if ischar(h.inputFig.sessionString.participantID) && length(h.inputFig.sessionString.participantID) ==3
+    % e.g. CL001_NR_3months or CL001_3months or HE001
+    sessionStringDisplay = [ h.inputFig.sessionString.cohort h.inputFig.sessionString.participantID ...
+        h.inputFig.sessionString.nail h.inputFig.sessionString.timePoint ];
+    set(h.inputFig.sessionString_Display,'string',sessionStringDisplay,'visible','on');
 else
     warndlg('Enter participant ID','!! Warning !!')
 end
+
+guidata(generateSessionString_pushButton_object,h.inputFig)
+end
+
+
+function @acquireData_pushButtonCallback(acquireData_pushButton_object,~,~)
+h.inputFig = guidata(acquireData_pushButton_object);
+
+    % store session string as matlab root UserData structure so it can be
+    % accessed once the inputFig is closed by acquireData_pushButtonCallback
+    inputData = struct('sessionString',h.inputFig.participantID,'cohort',h.inputFig.cohort);
+    set(0,'UserData',inputData);
+    guidata(generateSessionString_pushButton_object,h.inputFig)
+    close(get(generateSessionString_pushButton_object,'Parent'))    % close parent of acquireData_pushButton_object (inputFig)  
 end
