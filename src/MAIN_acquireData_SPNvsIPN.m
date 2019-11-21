@@ -24,5 +24,6 @@
 close all; close('all','hidden');  % Close figure opened by last run
 clc;
 
-[sessionString] = participant_info_GUI();
+sessionString = participant_info_GUI();
+pathList = makeDirectories(sessionString);
 
