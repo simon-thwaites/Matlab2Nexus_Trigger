@@ -8,6 +8,7 @@ function [sessionString] = participant_info_GUI()
 %   - 19/11/19: created, modified for SPN vs IPN data acquisition
 %   - 20/11/19: fixed popups, callback resets, display sessoin string,
 %   acquire data pushbutton.
+%   - 21/11/19: fixed ID input check. All working. 
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
@@ -29,9 +30,9 @@ h.inputFig = guihandles(inputFig);
 
 %% define GUI object positions (x-pos,y-pos, x-width, y-height)
 leftTextAlign = 5;
-leftObjectAlign = 130;
-textWidth = 100;
-objectWidth = 150;
+leftObjectAlign = 110;
+textWidth = 90;
+objectWidth = 200;
 text_object_height = 15;
 
 cohort_radioText_pos = [ leftTextAlign , 200 , textWidth , text_object_height ];
@@ -56,6 +57,7 @@ acquireData_pushButton_pos = [ 320 , 10 , 150 , 40 ];
 
 h.inputFig.sessionStringDisplay = ''; % intialise
 h.inputFig.sessionString.nail = '';
+h.inputFig.IDtextInputString = '<Enter Participant ID, then press Enter>';
 
 %% initialise popup state value and string
 h.inputFig.popupValue = 1;
@@ -68,11 +70,16 @@ h.inputFig.IDtext = uicontrol('Parent',    inputFig, ...
                     'Units',    'pixels', ...
                     'String',   'Participant ID:   ',...
                     'Position', IDtext_pos);
+% h.inputFig.pressEnterText = uicontrol('Parent',    inputFig, ...
+%                     'Style',    'text',...
+%                     'Units',    'pixels', ...
+%                     'String',   '(press :   ',...
+%                     'Position', pressEnterText_pos);                
 h.inputFig.IDtextInput = uicontrol('Parent',    inputFig, ...
                     'Style',    'edit',...
                     'Callback', @textCallBack,...
                     'Units',    'pixels', ...
-                    'String',   'Enter Participant ID:   ',...
+                    'String',   h.inputFig.IDtextInputString,...
                     'Position', IDtextInput_pos,...
                     'visible',  'off');               
 h.inputFig.cohort_radioText = uicontrol('Parent',    inputFig, ...
@@ -177,10 +184,10 @@ if h.inputFig.cohort_radio(2).Value == 1 % clinical
     set(h.inputFig.nailRemoved_radio(2),'visible', 'on');
     set(h.inputFig.timePoint_popup,'visible','on', ...
         'Value',1,'string',h.inputFig.popupString_clinical);
-    set(h.inputFig.IDtextInput,'visible','off','string','Enter Participant ID:   ');
+    set(h.inputFig.IDtextInput,'visible','off','string',h.inputFig.IDtextInputString);
     h.inputFig.sessionString.cohort = 'CL';
 elseif h.inputFig.cohort_radio(2).Value == 0 && h.inputFig.cohort_radio(1).Value == 0
-    set(h.inputFig.IDtextInput,'visible','off','string','Enter Participant ID:   ');
+    set(h.inputFig.IDtextInput,'visible','off','string',h.inputFig.IDtextInputString);
     set(h.inputFig.nailRemoved_radio(1),'visible', 'off','value',1);
     set(h.inputFig.nailRemoved_radio(2),'visible', 'off','value',0);
     set(h.inputFig.timePoint_popup,'visible','off','Value',0);
@@ -189,7 +196,7 @@ else % healthy
     set(h.inputFig.nailRemoved_radio(1),'visible', 'off','value',1);
     set(h.inputFig.nailRemoved_radio(2),'visible', 'off','value',0);
     set(h.inputFig.timePoint_popup,'visible','off','Value',0);
-    set(h.inputFig.IDtextInput,'visible','on','string','Enter Participant ID:   ');
+    set(h.inputFig.IDtextInput,'visible','on','string',h.inputFig.IDtextInputString);
     set(h.inputFig.sessionString_Display,'visible','off');
     h.inputFig.sessionString.cohort = 'HE';
     h.inputFig.sessionString.timePoint = '';
@@ -209,7 +216,7 @@ otherRadio = h.inputFig.nailRemoved_radio(h.inputFig.nailRemoved_radio ~= radio_
 set(otherRadio, 'Value', 0);
 h.inputFig.sessionString.nail = ''; % empty string
 set(h.inputFig.timePoint_popup,'visible','on','Value',1);
-set(h.inputFig.IDtextInput,'visible','off','string','Enter Participant ID:   ');
+set(h.inputFig.IDtextInput,'visible','off','string',h.inputFig.IDtextInputString);
 set(h.inputFig.generateSessionString_pushButton,'visible','off')
 set(h.inputFig.sessionString_Display,'visible','off')
 set(h.inputFig.acquireData_pushButton,'visible','off')
@@ -228,7 +235,7 @@ h.inputFig = guidata(popup_object);
 h.inputFig.popupValue = popup_object.Value;     % get popup value 
 h.inputFig.popupString = popup_object.String;   % get popup string
 
-set(h.inputFig.IDtextInput,'visible','on','string','Enter Participant ID:   ');
+set(h.inputFig.IDtextInput,'visible','on','string',h.inputFig.IDtextInputString);
 set(h.inputFig.generateSessionString_pushButton,'visible','off')
 set(h.inputFig.sessionString_Display,'visible','off')
 set(h.inputFig.acquireData_pushButton,'visible','off')
@@ -260,15 +267,15 @@ end
 %%
 function generateSessionString_pushButtonCallback(generateSessionString_pushButton_object,~,~)
 h.inputFig = guidata(generateSessionString_pushButton_object);
-
-if ischar(h.inputFig.sessionString.participantID) && length(h.inputFig.sessionString.participantID) ==3
+stringCheck = str2double(h.inputFig.sessionString.participantID); % output NaN if ID contains non-numeric input
+if ~isnan(stringCheck) && length(h.inputFig.sessionString.participantID) == 3
     % e.g. CL001_NR_3months or CL001_3months or HE001
     sessionStringDisplay = [ h.inputFig.sessionString.cohort h.inputFig.sessionString.participantID ...
         h.inputFig.sessionString.nail h.inputFig.sessionString.timePoint ];
     set(h.inputFig.sessionString_Display,'string',sessionStringDisplay,'visible','on');
     set(h.inputFig.acquireData_pushButton,'visible','on')
 else
-    warndlg('Enter participant ID','!! Warning !!')
+    warndlg('Participant ID must be numeric with length 3','ERROR: Incorrect Particiapnt ID')
 end
 
 guidata(generateSessionString_pushButton_object,h.inputFig)
