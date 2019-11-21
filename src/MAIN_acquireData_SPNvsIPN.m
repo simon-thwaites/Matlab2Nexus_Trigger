@@ -2,7 +2,8 @@
 
 % ----------------------------------------------------------------------- %
 % Major Revisions:
-%   - 19/11/19 (created)
+%   - 19/11/19: Created
+%   - 21/11/19: Addded participant_info_GUI.m
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
@@ -20,3 +21,8 @@
 % Note, the PacketID VALUE must increment by one every time a UDP packet 
 % is sent to Nexus, Nexus will not accept a repeated command.
 % ----------------------------------------------------------------------- %
+close all; close('all','hidden');  % Close figure opened by last run
+clc;
+
+[sessionString] = participant_info_GUI();
+
