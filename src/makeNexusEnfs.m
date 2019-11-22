@@ -31,12 +31,10 @@ cd(pathList.viconNexus_dir)
 cohortStringCheck = strcmp(cohortString,'HE');
 if cohortStringCheck == 1 
     cohort = 'Healthy';
-    healthy = 1;
 else
     cohortStringCheck = strcmp(cohortString,'CL');
     if cohortStringCheck == 1
         cohort = 'Clinical';
-        healthy = 0;
     end
 end
 
