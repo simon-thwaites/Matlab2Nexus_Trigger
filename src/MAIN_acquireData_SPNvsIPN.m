@@ -6,6 +6,8 @@
 %   - 21/11/19: Addded participant_info_GUI.m
 %   - 22/11/19: makeDirectories.m working for Healthy stream
 %               created getDateTime.m for .enf files
+%               makeDirectories.m working for clinical stream
+%               created makeNexusEnfs.m for generating Nexus enf files
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com

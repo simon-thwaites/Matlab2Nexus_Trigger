@@ -1,5 +1,12 @@
 function pathList = makeNexusEnfs(pathList,sessionString)
-% generate Nexus enf files for patient classification, patient, session.
+%% generate Nexus enf files for patient classification, patient, session.
+% ----------------------------------------------------------------------- %
+% Major Revisions:
+%   - 22/11/19: created
+% ----------------------------------------------------------------------- %
+% Simnon Thwaites
+% simonthwaites1991@gmail.com
+% ----------------------------------------------------------------------- %
 
 % create cell strings for Nexus .enf file creation
 nexusEnf.classification = { '[Node Information]' ; ...
@@ -82,15 +89,6 @@ if ~exist([ cohortIDstring , '.Patient.enf' ],'file')
     fclose(FID);
 end
 
-% using try block
-% if try to access the 6th element of sessionString returns error, cohort
-% must be healthy
-% try
-%     nexusSessionString = sessionString(6:end)
-% catch
-%     nexusSessionString = 'New Session'
-% end
-
 % if nexusSessionString(7:end) is empty, then must be healthy
 % if healthy, only one session (New Session)
 % if clinical take rest of string as session name
@@ -100,7 +98,7 @@ if isempty(nexusSessionString)
     nexusSessionString = 'New Session';
 end
 
-% now check if there is a session for the healthy participant
+% now check if there is a session directory
 if ~exist([ pwd , '\' , nexusSessionString ],'dir')
     mkdir([ pwd , '\' , nexusSessionString ])
 end
@@ -108,6 +106,7 @@ end
 cd([ pwd , '\' , nexusSessionString ]);
 pathList.session_dir = pwd;
 
+% check for session .enf
 if ~exist([nexusSessionString,'.Session.enf'],'file')
     % date and time paramaters to write to the .enf file
     cd(pathList.src_dir);
@@ -122,35 +121,4 @@ if ~exist([nexusSessionString,'.Session.enf'],'file')
 end
 
 cd(pathList.src_dir)
-
-% using switch
-% switch healthy
-%     case 1 
-%         % Healthy > only need "New Session"
-%         % check for New Session.enf
-%         if ~exist('New Session.Session.enf','file')
-%             % date and time paramaters to write to the .enf file
-%             cd(pathList.src_dir);
-%             creationString = getDateTime();
-%             cd(pathList.session_dir);
-%             
-%             % cat the date and time paramters to the CREATIONANDTIME entry
-%             nexusEnf.session{4} = [ nexusEnf.session{4} , creationString ];
-%             FID = fopen('New Session.Session.enf', 'w');
-%             fprintf(FID, '%s\r\n',nexusEnf.session{:});
-%             fclose(FID);
-%         end
-%     case 0 
-%         % Clinical > now want to check if nail removed and also want time
-%         % points for the session name 
-%         % if nail removed have format:
-%         % sessionString = 'CL999_NR_3months'
-%         % if nail not removed have format: 
-%         % sessionString = 'CL999_3months'
-%         % so scan string for NR, get string from last underscore to end for
-%         % timepoint
-%         
-%         % check nail removed
-        
-
 end
