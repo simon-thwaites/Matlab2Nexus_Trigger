@@ -34,3 +34,7 @@ sessionString = participant_info_GUI();
 % check/male directories
 pathList = makeDirectories(sessionString);
 
+% generate trial list
+trial_list = generate_trial_list2();
+
+matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list)
