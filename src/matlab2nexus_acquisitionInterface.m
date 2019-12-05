@@ -3,6 +3,9 @@ function matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list)
 %
 % ----------------------------------------------------------------------- %
 % Created: 29/11/2019
+% Updates: 5/12/2019 - previous button working
+%                    - next button working
+%                    - trial counters working
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
@@ -272,7 +275,7 @@ end
 function comment_CallBack(text_object, ~, ~)
 h.acquisitionFig = guidata(text_object);
 set(h.acquisitionFig.comment_updateButton, 'Enable', 'on');
-guidata(text_object, h.acquisitionFig)
+guidata(text_object, h.acquisitionFig) % update handles
 end
 
 function comment_updateButton_CallBack(pushButton_object, ~, ~)
@@ -284,7 +287,7 @@ set(h.acquisitionFig.comment_updateButton, 'Enable', 'off');
 % need to save this comment field somewhere!!
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-guidata(pushButton_object, h.acquisitionFig)
+guidata(pushButton_object, h.acquisitionFig) % update handles
 end
 
 function nextTrial_button_CallBack(pushButton_object, ~, ~)
@@ -292,8 +295,7 @@ h.acquisitionFig = guidata(pushButton_object);
 
 % need to have a counter here for the completed cell array
 h.acquisitionFig.trialCellArray_completed_counter = h.acquisitionFig.trialCellArray_completed_counter + 1;
-counter = h.acquisitionFig.trialCellArray_completed_counter
-
+counter = h.acquisitionFig.trialCellArray_completed_counter;
 
 if counter < length(h.acquisitionFig.trialCellArray) + 1
     % get next capture info
@@ -318,8 +320,7 @@ if counter < length(h.acquisitionFig.trialCellArray) + 1
         set(h.acquisitionFig.nextTrial_button, 'enable', 'off');
     end
 end
-
-guidata(pushButton_object, h.acquisitionFig)
+guidata(pushButton_object, h.acquisitionFig) % update handles
 end
 
 function previousTrial_button_CallBack(pushButton_object, ~, ~)
@@ -339,11 +340,10 @@ if counter ~= 0
     % update the trial list
     h.acquisitionFig.trialCellArray_updated = [h.acquisitionFig.trialCellArray_completed(shift_row_num,:); h.acquisitionFig.trialCellArray_updated];
     set(h.acquisitionFig.trial_list_text, 'String', h.acquisitionFig.trialCellArray_updated(:,1));
-    
-    
     h.acquisitionFig.trialCellArray_completed(shift_row_num,:) = []; % then make the shifted row empty
     
-    counter = counter - 1
+    % decrease the counter
+    counter = counter - 1;
     h.acquisitionFig.trialCellArray_completed_counter = counter;
     
     % once get back to zero, disable previous button
@@ -366,10 +366,10 @@ if counter ~= 0
         set(h.acquisitionFig.savingAs_dynamicText, 'String', h.acquisitionFig.thisCaptureSavingAs);
     end
 else
+    % if back to start of trial list, disble previous button
     set(h.acquisitionFig.previousTrial_button, 'enable', 'off');
 end
-
-guidata(pushButton_object, h.acquisitionFig)
+guidata(pushButton_object, h.acquisitionFig) % update handles
 end
 
 function start_button_CallBack(pushButton_object, ~, ~)
@@ -385,7 +385,7 @@ set(h.acquisitionFig.stop_button, 'enable', 'on');
 
 % send the udp packet
 
-guidata(pushButton_object, h.acquisitionFig)
+guidata(pushButton_object, h.acquisitionFig) % update handles
 end
 
 function stop_button_CallBack(pushButton_object, ~, ~)
@@ -424,5 +424,5 @@ h.acquisitionFig.thisCaptureSavingAs = [h.acquisitionFig.trialCellArray_complete
 set(h.acquisitionFig.trialNumber_dynamicText, 'String', h.acquisitionFig.thisCaptureNumber);
 set(h.acquisitionFig.savingAs_dynamicText, 'String', h.acquisitionFig.thisCaptureSavingAs);
 
-guidata(pushButton_object, h.acquisitionFig)
+guidata(pushButton_object, h.acquisitionFig) % update handles
 end
