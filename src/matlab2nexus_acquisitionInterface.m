@@ -3,9 +3,11 @@ function matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list)
 %
 % ----------------------------------------------------------------------- %
 % Created: 29/11/2019
-% Updates: 5/12/2019 - previous button working
-%                    - next button working
-%                    - trial counters working
+% Updates: 05/12/2019: - previous button working
+%                      - next button working
+%                      - trial counters working
+%          06/12/2019: - comments saving
+%                      - need to test UDP sending
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
