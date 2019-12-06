@@ -37,4 +37,5 @@ pathList = makeDirectories(sessionString);
 % generate trial list
 trial_list = generate_trial_list2();
 
+% launch acquisition interface
 matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list)
