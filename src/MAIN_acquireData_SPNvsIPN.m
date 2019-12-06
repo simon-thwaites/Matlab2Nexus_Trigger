@@ -8,6 +8,10 @@
 %               created getDateTime.m for .enf files
 %               makeDirectories.m working for clinical stream
 %               created makeNexusEnfs.m for generating Nexus enf files
+%   - 06/12/19: generate_trial_list2.m working
+%               getIPaddress.m working
+%               matlab2nexus_acquisitionInterface.m trial counters working
+%               
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
