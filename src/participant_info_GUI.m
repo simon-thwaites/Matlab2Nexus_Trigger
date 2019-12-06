@@ -69,12 +69,7 @@ h.inputFig.IDtext = uicontrol('Parent',    inputFig, ...
                     'Style',    'text',...
                     'Units',    'pixels', ...
                     'String',   'Participant ID:   ',...
-                    'Position', IDtext_pos);
-% h.inputFig.pressEnterText = uicontrol('Parent',    inputFig, ...
-%                     'Style',    'text',...
-%                     'Units',    'pixels', ...
-%                     'String',   '(press :   ',...
-%                     'Position', pressEnterText_pos);                
+                    'Position', IDtext_pos);               
 h.inputFig.IDtextInput = uicontrol('Parent',    inputFig, ...
                     'Style',    'edit',...
                     'Callback', @textCallBack,...
@@ -109,7 +104,7 @@ h.inputFig.generateSessionString_pushButton = uicontrol('Parent',    inputFig, .
                     'position', generateSessionString_pushButton_pos,...
                     'string',   'Generate Session String',...
                     'callback', @generateSessionString_pushButtonCallback,...
-                    'visible',  'off');
+                    'enable',  'off');
 h.inputFig.nailRemoved_radioText = uicontrol('Parent',    inputFig, ...
                     'Style',    'text',...
                     'Units',    'pixels', ...
@@ -161,7 +156,7 @@ h.inputFig.acquireData_pushButton = uicontrol('Parent',    inputFig, ...
                     'position', acquireData_pushButton_pos,...
                     'string',   'ACQUIRE DATA',...
                     'callback', @acquireData_pushButtonCallback,...
-                    'visible',  'off');
+                    'enable',  'off');
                 
 h.inputFig.textEntered = 0;     % var to make sure Participant ID entered first 
 guidata(inputFig,h.inputFig);  % update handles
@@ -202,9 +197,9 @@ else % healthy
     h.inputFig.sessionString.timePoint = '';
     h.inputFig.sessionString.nail = '';
 end
-set(h.inputFig.generateSessionString_pushButton,'visible','off')
+set(h.inputFig.generateSessionString_pushButton,'enable','off')
 set(h.inputFig.sessionString_Display,'visible','off')
-set(h.inputFig.acquireData_pushButton,'visible','off')
+set(h.inputFig.acquireData_pushButton,'enable','off')
 guidata(radio_object,h.inputFig)
 end
 
@@ -217,9 +212,9 @@ set(otherRadio, 'Value', 0);
 h.inputFig.sessionString.nail = ''; % empty string
 set(h.inputFig.timePoint_popup,'visible','on','Value',1);
 set(h.inputFig.IDtextInput,'visible','off','string',h.inputFig.IDtextInputString);
-set(h.inputFig.generateSessionString_pushButton,'visible','off')
+set(h.inputFig.generateSessionString_pushButton,'enable','off')
 set(h.inputFig.sessionString_Display,'visible','off')
-set(h.inputFig.acquireData_pushButton,'visible','off')
+set(h.inputFig.acquireData_pushButton,'enable','off')
 
 if h.inputFig.cohort_radio(2).Value == 1 % clinical, check nail
     if h.inputFig.nailRemoved_radio(2).Value == 1 % nail has been removed
@@ -236,9 +231,9 @@ h.inputFig.popupValue = popup_object.Value;     % get popup value
 h.inputFig.popupString = popup_object.String;   % get popup string
 
 set(h.inputFig.IDtextInput,'visible','on','string',h.inputFig.IDtextInputString);
-set(h.inputFig.generateSessionString_pushButton,'visible','off')
+set(h.inputFig.generateSessionString_pushButton,'enable','off')
 set(h.inputFig.sessionString_Display,'visible','off')
-set(h.inputFig.acquireData_pushButton,'visible','off')
+set(h.inputFig.acquireData_pushButton,'enable','off')
 
 if h.inputFig.popupValue == 1
     set(h.inputFig.IDtextInput,'visible','off');
@@ -258,8 +253,8 @@ h.inputFig.sessionString.participantID = h.inputFig.IDtextInput.String;
 %-------------------------------%
 % could make input string more robust here
 %-------------------------------%
-set(h.inputFig.generateSessionString_pushButton, 'visible', 'on');
-set(h.inputFig.acquireData_pushButton,'visible','off')
+set(h.inputFig.generateSessionString_pushButton, 'enable', 'on');
+set(h.inputFig.acquireData_pushButton,'enable','off')
 % stores the specified data in the figure's application data
 guidata(text_object,h.inputFig)
 end
@@ -273,7 +268,7 @@ if ~isnan(stringCheck) && length(h.inputFig.sessionString.participantID) == 3
     sessionStringDisplay = [ h.inputFig.sessionString.cohort h.inputFig.sessionString.participantID ...
         h.inputFig.sessionString.nail h.inputFig.sessionString.timePoint ];
     set(h.inputFig.sessionString_Display,'string',sessionStringDisplay,'visible','on');
-    set(h.inputFig.acquireData_pushButton,'visible','on')
+    set(h.inputFig.acquireData_pushButton,'enable','on')
 else
     warndlg('Participant ID must be numeric with length 3','ERROR: Incorrect Particiapnt ID')
 end

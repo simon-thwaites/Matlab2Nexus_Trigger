@@ -68,8 +68,9 @@ buttonFont = 16;
 % trial list panel objects
 trial_list_text_position = [0.01 0.01 0.8 0.98];
 
-
-
+% add the pathlists and session string to the handle
+h.acquisitionFig.pathList = pathList;
+h.acquisitionFig.sessionString = sessionString;
 
 
 %% Initialise UI values
@@ -143,8 +144,10 @@ h.acquisitionFig.comment_editField = uicontrol('Parent', h.acquisitionFig.commen
     'Style',                'edit', ...
     'Units',                'normalized', ...
     'Position',             comment_editField_position, ...
-    'String',               '<Press Enter after each comment change. Then commit the change with the push button to the right>',...
-    'Callback',             @comment_CallBack);
+    'String',               '<WARNING: Remember to commit each comment change with the push button to the right>',...
+    'Callback',             @comment_CallBack,...
+    'Min',                  1,...
+    'Max',                  3); % If Max-Min>1, then multiple lines are allowed
 h.acquisitionFig.comment_editField_staticText = uicontrol('Parent', h.acquisitionFig.comments_panel, ...
     'Style',                'text', ...
     'Units',                'normalized', ...
@@ -154,8 +157,8 @@ h.acquisitionFig.comment_editField_staticText = uicontrol('Parent', h.acquisitio
 h.acquisitionFig.comment_updateButton = uicontrol('Parent', h.acquisitionFig.comments_panel, ...
     'Style',                'pushbutton', ...
     'Units',                'normalized', ...
-    'Enable',               'off', ...
-    'String',               'Update Comment File', ...
+    'Enable',               'on', ...
+    'String',               'Update Comments.txt', ...
     'Position',             comment_updateButton_position, ...
     'Callback',             @comment_updateButton_CallBack);
                 
@@ -277,19 +280,21 @@ h.acquisitionFig = guidata(text_object);
 set(h.acquisitionFig.comment_updateButton, 'Enable', 'on');
 guidata(text_object, h.acquisitionFig) % update handles
 end
-
+%%
 function comment_updateButton_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 h.acquisitionFig.commentString = h.acquisitionFig.comment_editField.String;
-set(h.acquisitionFig.comment_updateButton, 'Enable', 'off');
+set(h.acquisitionFig.comment_updateButton, 'Enable', 'on');
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% need to save this comment field somewhere!!
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% save/overwrite the Comments.txt file
+fileID = fopen([h.acquisitionFig.pathList.session_dir,'\Comments.txt'],'w');
+fprintf(fileID, '~~~\r\nSessionID: \r\n%s\r\n~~~\r\n', h.acquisitionFig.sessionString);
+fprintf(fileID, 'Comments: \r\n%s\r\n~~~', h.acquisitionFig.commentString);
+fclose(fileID);
 
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-
+%%
 function nextTrial_button_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 
@@ -322,7 +327,7 @@ if counter < length(h.acquisitionFig.trialCellArray) + 1
 end
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-
+%%
 function previousTrial_button_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 
@@ -371,7 +376,7 @@ else
 end
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-
+%%
 function start_button_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 
@@ -387,7 +392,7 @@ set(h.acquisitionFig.stop_button, 'enable', 'on');
 
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-
+%%
 function stop_button_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 
