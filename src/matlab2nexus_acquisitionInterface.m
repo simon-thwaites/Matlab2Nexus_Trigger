@@ -134,17 +134,10 @@ h.acquisitionFig.trialCellArray_completed_counter = 0;
 % starting value for knee pain selection
 h.acquisitionFig.kneePain_currentValue = 'None';
 
-% initialise Knee-Pain.csv
-% fileID = fopen([h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'],'w');
-% fprintf(fileID, 'TrialName,KneePain\r\n');
-% fclose(fileID);
-
 % need 2019 install
-h.acquisitionFig.kneePain_cell = {'TrialName','KneePain'};
-writecell(h.acquisitionFig.kneePain_cell,[h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'])
-
-% writecell(h.acquisitionFig.kneePain_cell,...
-%     'C:\Users\a1194788\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\data\Vicon Nexus\Healthy\HE999\New Session\Knee-Pain.csv')
+h.acquisitionFig.kneePain_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'];
+h.acquisitionFig.kneePain_cell = {'Participant Session',sessionString;'TrialName','KneePain'};
+writecell(h.acquisitionFig.kneePain_cell,h.acquisitionFig.kneePain_csvFullFile)
 
 %% initialise UDP object
 h.acquisitionFig.IPaddress = '255.255.255.255';     % broadcast over everything
@@ -623,9 +616,16 @@ end
 function kneePain_storeSelection_CallBack(kneePain_pushbutton_object, ~, ~)
 h.acquisitionFig = guidata(kneePain_pushbutton_object);
 
-% store the value to csv
-h.acquisitionFig.kneePain_cell = [h.acquisitionFig.kneePain_cell;{h.acquisitionFig.saveTrial, h.acquisitionFig.kneePain_currentValue}];
-writecell(h.acquisitionFig.kneePain_cell,[h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'])
+% store the value to csv but first check if need to overwrite the current 
+% knee pain score
+oldCsv = readcell(h.acquisitionFig.kneePain_csvFullFile);
+if strcmp(oldCsv{end,1},h.acquisitionFig.saveTrial) == 1     % check if user wants to overwtrite last entered knee pain score
+    oldCsv{end,2} = h.acquisitionFig.kneePain_currentValue;  % if so, update the value
+    writecell(oldCsv, h.acquisitionFig.kneePain_csvFullFile) % write to csv
+else % if it's a new trial, append to new row
+    h.acquisitionFig.kneePain_cell = [h.acquisitionFig.kneePain_cell;{h.acquisitionFig.saveTrial, h.acquisitionFig.kneePain_currentValue}];
+    writecell(h.acquisitionFig.kneePain_cell,h.acquisitionFig.kneePain_csvFullFile)
+end
 
 % counter for trial increment
 counter = h.acquisitionFig.trialCellArray_completed_counter;
@@ -650,6 +650,5 @@ if counter == 0
     set(h.acquisitionFig.nextTrial_button, 'enable', 'on');
 end
 
-disp(h.acquisitionFig.kneePain_currentValue);
 guidata(kneePain_pushbutton_object, h.acquisitionFig) % update handles
 end
