@@ -21,6 +21,7 @@ function matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list)
 %          06/12/2019: - comments saving
 %                      - UDP sending working
 %          17/12/2019: - knee pain radio buttons. writing this to csv
+%          18/12/2019: - overwriting csv knee pain score of same trial
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
