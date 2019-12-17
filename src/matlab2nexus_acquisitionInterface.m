@@ -20,7 +20,7 @@ function matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list)
 %                      - trial counters working
 %          06/12/2019: - comments saving
 %                      - UDP sending working
-%          17/12/2019: - knee pain radio buttons and commit push button
+%          17/12/2019: - knee pain radio buttons. writing this to csv
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
@@ -138,10 +138,11 @@ h.acquisitionFig.kneePain_currentValue = 'None';
 % fileID = fopen([h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'],'w');
 % fprintf(fileID, 'TrialName,KneePain\r\n');
 % fclose(fileID);
-% h.acquisitionFig.kneePain_cell = {'TrialName','KneePain'};
-% writecell(h.acquisitionFig.kneePain_cell,[h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'])
 
 % need 2019 install
+h.acquisitionFig.kneePain_cell = {'TrialName','KneePain'};
+writecell(h.acquisitionFig.kneePain_cell,[h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'])
+
 % writecell(h.acquisitionFig.kneePain_cell,...
 %     'C:\Users\a1194788\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\data\Vicon Nexus\Healthy\HE999\New Session\Knee-Pain.csv')
 
@@ -599,6 +600,9 @@ end
 set(h.acquisitionFig.kneePain_storeSelection_button, ...
     'BackgroundColor', h.acquisitionFig.highlight_button_colour);
 
+% store this value before updateing counters to write to csv
+h.acquisitionFig.saveTrial = h.acquisitionFig.thisCaptureSavingAs;
+
 % update trial counters
 add_trial_num_to = max(cell2mat(h.acquisitionFig.trialCellArray_completed(:,5)));
 h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4} = h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4} + 1;
@@ -620,9 +624,8 @@ function kneePain_storeSelection_CallBack(kneePain_pushbutton_object, ~, ~)
 h.acquisitionFig = guidata(kneePain_pushbutton_object);
 
 % store the value to csv
-% fileID = fopen([h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'],'w');
-% fprintf(fileID, [h.acquisitionFig.thisCaptureSavingAs,',',h.acquisitionFig.kneePain_currentValue,'\r\n']);
-% fclose(fileID);
+h.acquisitionFig.kneePain_cell = [h.acquisitionFig.kneePain_cell;{h.acquisitionFig.saveTrial, h.acquisitionFig.kneePain_currentValue}];
+writecell(h.acquisitionFig.kneePain_cell,[h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'])
 
 % counter for trial increment
 counter = h.acquisitionFig.trialCellArray_completed_counter;
