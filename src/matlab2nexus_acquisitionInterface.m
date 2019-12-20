@@ -1,4 +1,4 @@
-function matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list)
+function [endCaptureState, nexusPacketID_return] = matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list, nexusPacketID)
 % main acquisition interface for data capture
 %-------------------------------------------------------------------------%
 % Vicon Nexus:
@@ -24,11 +24,14 @@ function matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list)
 %          18/12/2019: - overwriting csv knee pain score of same trial
 %          19/12/2019: - height and mass entries 
 %          20/12/2019: - add end capture panels
+%                      - NexuspacketID incrementing for multiple capture
+%                      sessions, need to test this in lab.
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
 % ----------------------------------------------------------------------- %
-
+endCaptureState = [];
+nexusPacketID_return = nexusPacketID;
 %% Create main figure
 figTag = 'acq_figTag';
 acquisitionFig = figure('numbertitle',      'off', ...
@@ -167,7 +170,7 @@ h.acquisitionFig.participantInfo_massValue_valid = 0;
 %% initialise UDP object
 h.acquisitionFig.IPaddress = '255.255.255.255';     % broadcast over everything
 h.acquisitionFig.Port = 6610;                       % needs to also be set as 6610 in Vicon Nexus
-h.acquisitionFig.nexusPacketID = 0;                 % for incrementing UDP packets (required for Nexus)
+h.acquisitionFig.nexusPacketID = nexusPacketID;                 % for incrementing UDP packets (required for Nexus)
 h.acquisitionFig.nexusUDP = dsp.UDPSender('RemoteIPAddress',   h.acquisitionFig.IPaddress,...
     'RemoteIPPort',      h.acquisitionFig.Port,...
     'LocalIPPortSource', 'Property',...
@@ -481,6 +484,40 @@ h.acquisitionFig.endSession_pushbutton = uicontrol('Parent', h.acquisitionFig.en
 
 guidata(acquisitionFig,h.acquisitionFig);
 
+% ----------------------------------------------------------------------- %
+% ======================================================================= %
+%% End capture Callbacks
+% ======================================================================= %
+    function newSession_pushbutton_CallBack(button_object,~,~)
+        endCaptureState = 1;
+        nexusPacketID_return = getappdata(h.acquisitionFig.acq_figTag, 'return_nexusPacketID');%h.acquisitionFig.nexusPacketID;
+        % h.acquisitionFig = guidata(button_object);
+        % guidata(button_object, h.acquisitionFig) % update handles
+        % setappdata(h.acquisitionFig.acq_figTag,'return_nexusPacketID',h.acquisitionFig.nexusPacketID)
+        % getappdata(h.acquisitionFig.acq_figTag, 'return_nexusPacketID')
+        % value = 9;
+        % h.acquisitionFig.acq_figTag.return_nexusPacketID
+        % guidata(button_object, h.acquisitionFig) % update handles
+        % can do like this but best not to ...
+        % evalin('base', 'return_nexusPacketID', num2str(h.acquisitionFig.nexusPacketID));
+        
+        % h.return_nexusPacketID = h.acquisitionFig.nexusPacketID;
+        % disp(h.return_nexusPacketID)
+%         closereq();
+        delete(acquisitionFig);
+    end
+%%
+    function analysis_pushbutton_CallBack(button_object,~,~)
+        % h.acquisitionFig = guidata(button_object);
+        % guidata(button_object, h.acquisitionFig) % update handles
+    end
+%%
+    function endSession_pushbutton_CallBack(button_object,~,~)
+        % h.acquisitionFig = guidata(button_object);
+        % guidata(button_object, h.acquisitionFig) % update handles
+    end
+% ----------------------------------------------------------------------- %
+waitfor(acquisitionFig); 
 end
 
 %% CALLBACKS
@@ -672,6 +709,7 @@ nexusStop = ['<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'...
 nexusStop = pad(nexusStop,500);
 % nexus complete message
 h.acquisitionFig.nexusPacketID = h.acquisitionFig.nexusPacketID + 1;
+setappdata(h.acquisitionFig.acq_figTag,'return_nexusPacketID',h.acquisitionFig.nexusPacketID)
 nexusComplete = ['<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'...
     '<CaptureComplete>'...
     '<Name VALUE="',            h.acquisitionFig.thisCaptureSavingAs,'"/>'...
@@ -819,20 +857,31 @@ writecell(h.acquisitionFig.participantInfo_cell,h.acquisitionFig.participantInfo
 
 guidata(button_object, h.acquisitionFig) % update handles
 end
-% ======================================================================= %
-%% End capture Callbacks
-% ======================================================================= %
-function newSession_pushbutton_CallBack(button_object,~,~)
-h.acquisitionFig = guidata(button_object);
-guidata(button_object, h.acquisitionFig) % update handles
-end
-%%
-function analysis_pushbutton_CallBack(button_object,~,~)
-h.acquisitionFig = guidata(button_object);
-guidata(button_object, h.acquisitionFig) % update handles
-end
-%%
-function endSession_pushbutton_CallBack(button_object,~,~)
-h.acquisitionFig = guidata(button_object);
-guidata(button_object, h.acquisitionFig) % update handles
-end
+% % ======================================================================= %
+% %% End capture Callbacks
+% % ======================================================================= %
+% function newSession_pushbutton_CallBack(button_object,~,~)
+% h.acquisitionFig = guidata(button_object);
+% guidata(button_object, h.acquisitionFig) % update handles
+% % setappdata(h.acquisitionFig.acq_figTag,'return_nexusPacketID',h.acquisitionFig.nexusPacketID)
+% % getappdata(h.acquisitionFig.acq_figTag)
+% % value = 9;
+% % h.acquisitionFig.acq_figTag.return_nexusPacketID
+% % guidata(button_object, h.acquisitionFig) % update handles
+% % can do like this but best not to ...
+% % evalin('base', 'return_nexusPacketID', num2str(h.acquisitionFig.nexusPacketID));
+% 
+% % h.return_nexusPacketID = h.acquisitionFig.nexusPacketID;
+% % disp(h.return_nexusPacketID)
+% % closereq(); 
+% end
+% %%
+% function analysis_pushbutton_CallBack(button_object,~,~)
+% h.acquisitionFig = guidata(button_object);
+% guidata(button_object, h.acquisitionFig) % update handles
+% end
+% %%
+% function endSession_pushbutton_CallBack(button_object,~,~)
+% h.acquisitionFig = guidata(button_object);
+% guidata(button_object, h.acquisitionFig) % update handles
+% end
