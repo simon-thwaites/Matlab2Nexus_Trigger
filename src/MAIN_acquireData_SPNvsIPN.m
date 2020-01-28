@@ -61,6 +61,7 @@ while anotherCapture
             disp(['output count: ',num2str(nexusPacketID_return)])
             nexusPacketID = nexusPacketID_return;
             anotherCapture = true;
+            % probably good to 'zero' session, path, trial here?
         case 2
             
         case 3
