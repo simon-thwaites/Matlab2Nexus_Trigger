@@ -15,6 +15,7 @@
 %               - and write to csv file working
 %   - 20/12/19: - incrementing nexuspacketID for multiple sessions, need to
 %                 test this in the lab
+%   - 29/01/20: - static capture only 50 frames
 %               
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
@@ -56,15 +57,16 @@ while anotherCapture
     % value = matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list, nexusPacketID)
     drawnow()
     switch endCaptureState
-        case 1
+        case 1 % another capture
             % update packet ID input
             disp(['output count: ',num2str(nexusPacketID_return)])
             nexusPacketID = nexusPacketID_return;
             anotherCapture = true;
             % probably good to 'zero' session, path, trial here?
-        case 2
+        
+        case 2 % finish session and run analysis
             
-        case 3
+        case 3 % finish session
             
         otherwise
             disp('neither')

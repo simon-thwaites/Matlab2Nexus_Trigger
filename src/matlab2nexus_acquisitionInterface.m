@@ -26,9 +26,13 @@ function [endCaptureState, nexusPacketID_return] = matlab2nexus_acquisitionInter
 %          20/12/2019: - add end capture panels
 %                      - NexuspacketID incrementing for multiple capture
 %                      sessions, need to test this in lab.
+%          29/01/2020: - static capture only 50 frames, need to test
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
+% ----------------------------------------------------------------------- %
+vicon_optical_fps = 200; % operating Hz for vicon optical devices
+vicon_static_capture = 50; % desired frame count for static capture
 % ----------------------------------------------------------------------- %
 endCaptureState = [];
 nexusPacketID_return = nexusPacketID;
@@ -45,6 +49,7 @@ acquisitionFig = figure('numbertitle',      'off', ...
                 'outerposition',    [0.2 0.2 0.6 0.6],...
                 'HandleVisibility', 'callback'); % hide the handle to prevent unintended modifications
 h.acquisitionFig = guihandles(acquisitionFig); % create handles attached to acquisitionFig
+h.acquisitionFig.vicon_pause = vicon_static_capture/vicon_optical_fps;
 
 %% define GUI object positions (x-pos,y-pos, x-width, y-height)
 % h.acquisitionFig.staticText_backgroundColour = [0.85 0.85 0.85];
@@ -543,7 +548,7 @@ fclose(fileID);
 
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-% ======================================================================= %
+
 %% Capture Callbacks
 % ======================================================================= %
 function nextTrial_button_CallBack(pushButton_object, ~, ~)
@@ -668,9 +673,12 @@ for i = 1:5
    set(h.acquisitionFig.kneePain_radio(i), 'enable', 'off');
 end
 
-% enable stop button
-set(h.acquisitionFig.stop_button, 'enable', 'on');
-set(h.acquisitionFig.stop_button, 'BackgroundColor', h.acquisitionFig.stop_colour)
+% check for static trial type, if not, enable stop button.
+if ~strcmp(h.acquisitionFig.thisCaptureString, "Calibration - Static")
+    % enable stop button
+    set(h.acquisitionFig.stop_button, 'enable', 'on');
+    set(h.acquisitionFig.stop_button, 'BackgroundColor', h.acquisitionFig.stop_colour)
+end
 
 % Update Nexus packet counter
 h.acquisitionFig.nexusPacketID = h.acquisitionFig.nexusPacketID + 1; 
@@ -686,6 +694,62 @@ nexusStart =['<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'...
 nexusStart = pad(nexusStart,500); % pad all Nexus messages to same length
 % send the start packet
 h.acquisitionFig.nexusUDP(int8(nexusStart));
+
+% check for static trial type, if so, only 50 frame capture, force stop.
+if strcmp(h.acquisitionFig.thisCaptureString, "Calibration - Static")
+    
+    % pause for desired amount
+    pause(h.acquisitionFig.vicon_pause)
+    
+    % update Nexus packet counter
+    h.acquisitionFig.nexusPacketID = h.acquisitionFig.nexusPacketID + 1;
+    % generate Nexus stop message
+    nexusStop = ['<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'...
+        '<CaptureStop RESULT="SUCCESS">'...
+        '<Name VALUE="',            h.acquisitionFig.thisCaptureSavingAs,'"/>'...
+        '<DatabasePath VALUE="',    h.acquisitionFig.pathList.session_dir,'"/>'...
+        '<Delay VALUE="0"/>'...
+        '<PacketID VALUE="',        num2str(h.acquisitionFig.nexusPacketID),'"/>'...
+        '</CaptureStop>'];
+    nexusStop = pad(nexusStop,500);
+    % nexus complete message
+    h.acquisitionFig.nexusPacketID = h.acquisitionFig.nexusPacketID + 1;
+    setappdata(h.acquisitionFig.acq_figTag,'return_nexusPacketID',h.acquisitionFig.nexusPacketID)
+    nexusComplete = ['<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'...
+        '<CaptureComplete>'...
+        '<Name VALUE="',            h.acquisitionFig.thisCaptureSavingAs,'"/>'...
+        '<DatabasePath VALUE="',    h.acquisitionFig.pathList.session_dir,'"/>'...
+        '<PacketID VALUE="',        num2str(h.acquisitionFig.nexusPacketID),'"/>'...
+        '</CaptureComplete>'];
+    nexusComplete = pad(nexusComplete,500);
+    % send the stop packets
+    h.acquisitionFig.nexusUDP(int8(nexusStop));
+    h.acquisitionFig.nexusUDP(int8(nexusComplete));
+    
+%     % disable stop button
+%     set(h.acquisitionFig.stop_button, 'enable', 'off');
+%     set(h.acquisitionFig.stop_button, 'BackgroundColor', h.acquisitionFig.leftright_colour)
+    
+    % enable knee pain buttons
+    set(h.acquisitionFig.kneePain_storeSelection_button, 'enable', 'on');
+    for i = 1:5
+        set(h.acquisitionFig.kneePain_radio(i), 'enable', 'on');
+    end
+    % set knee pain pushbutton to orange
+    set(h.acquisitionFig.kneePain_storeSelection_button, ...
+        'BackgroundColor', h.acquisitionFig.highlight_button_colour);
+    
+    % store this value before updateing counters to write to csv
+    h.acquisitionFig.saveTrial = h.acquisitionFig.thisCaptureSavingAs;
+    
+    % update trial counters
+    add_trial_num_to = max(cell2mat(h.acquisitionFig.trialCellArray_completed(:,5)));
+    h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4} = h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4} + 1;
+    h.acquisitionFig.thisCaptureNumber = num2str(h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4}, '%02.f');
+    h.acquisitionFig.thisCaptureSavingAs = [h.acquisitionFig.trialCellArray_completed{add_trial_num_to,2},'_',h.acquisitionFig.thisCaptureNumber]; % generate the Saving As string
+    set(h.acquisitionFig.trialNumber_dynamicText, 'String', h.acquisitionFig.thisCaptureNumber);
+    set(h.acquisitionFig.savingAs_dynamicText, 'String', h.acquisitionFig.thisCaptureSavingAs);
+end
 
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
