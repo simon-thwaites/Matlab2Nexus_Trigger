@@ -39,6 +39,10 @@ clc;
 nexusPacketID = 0; % initialise for incrementing UDP packets (required for Nexus)
 anotherCapture = true; 
 
+w1 = warndlg('FORCE PLATFORMS and EMGs ZEROED?','Hardware Check!');
+uiwait(w1)
+disp('Force platforms and EMGs zeroed.')
+
 while anotherCapture
     % participant and session information
     sessionString = participant_info_GUI();
@@ -47,31 +51,42 @@ while anotherCapture
     pathList = makeDirectories(sessionString);
     
     % generate trial list
-    trial_list = generate_trial_list2();
+    trial_list = generate_trial_list();
+    
+    % warnings to set Vicon Nexus database
+    w2 = warndlg('Nexus ECLIPSE DATABASE correct and ARMED for capture?','Vicon Nexus Check!');
+    uiwait(w2)
+    disp('Nexus databse correct and armed for capture.')
     
     % launch acquisition interface
-    % wait for this to close? waitfor(matlab2nexus_acquisitionInterface)
-    disp(['input count: ',num2str(nexusPacketID)])
+    disp('Launching Acquisition Interface ...')
     [endCaptureState, nexusPacketID_return] = matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list, nexusPacketID);
-    % value = matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list, nexusPacketID)
     drawnow()
     switch endCaptureState
         case 1 % another capture
             % update packet ID input
-            disp(['output count: ',num2str(nexusPacketID_return)])
             nexusPacketID = nexusPacketID_return;
             anotherCapture = true;
-            % probably good to 'zero' session, path, trial here?
-        
+            disp('Capturing another session.')
+            disp('----------')
+            
         case 2 % finish session and run analysis
+            anotherCapture = false;
             
         case 3 % finish session
+            anotherCapture = false;
+            disp('Session finished.')
+            disp('----------')
             
         otherwise
             disp('neither')
             
     end
-    
 end
 
-
+if anotherCapture == true && endCaptureState == 2 
+    
+    % run analysis for last session
+    
+end
+    

@@ -46,7 +46,6 @@ acquisitionFig = figure('numbertitle',      'off', ...
                 'outerposition',    [0.2 0.2 0.6 0.6],...
                 'HandleVisibility', 'callback'); % hide the handle to prevent unintended modifications
 h.acquisitionFig = guihandles(acquisitionFig); % create handles attached to acquisitionFig
-h.acquisitionFig.vicon_pause = vicon_static_capture/vicon_optical_fps;
 
 %% define GUI object positions (x-pos,y-pos, x-width, y-height)
 % h.acquisitionFig.staticText_backgroundColour = [0.85 0.85 0.85];
@@ -478,7 +477,7 @@ h.acquisitionFig.analysis_pushbutton = uicontrol('Parent', h.acquisitionFig.end_
 h.acquisitionFig.endSession_pushbutton = uicontrol('Parent', h.acquisitionFig.end_capture_panel, ...
     'Style',                'pushbutton', ...
     'Units',                'normalized', ...
-    'Enable',               'off', ...
+    'Enable',               'on', ...
     'String',               'End Session', ...
     'Position',             endSession_pushbutton_position, ...
     'Callback',             @endSession_pushbutton_CallBack);
@@ -517,11 +516,14 @@ guidata(acquisitionFig,h.acquisitionFig);
     function endSession_pushbutton_CallBack(button_object,~,~)
         % h.acquisitionFig = guidata(button_object);
         % guidata(button_object, h.acquisitionFig) % update handles
+        endCaptureState = 3;
+        delete(acquisitionFig);
     end
 % ----------------------------------------------------------------------- %
 waitfor(acquisitionFig); 
 end
 
+% ======================================================================= %
 %% CALLBACKS
 % ======================================================================= %
 % Comment Callbacks
@@ -545,7 +547,7 @@ fclose(fileID);
 
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-
+% ======================================================================= %
 %% Capture Callbacks
 % ======================================================================= %
 function nextTrial_button_CallBack(pushButton_object, ~, ~)
