@@ -25,14 +25,11 @@ function [endCaptureState, nexusPacketID_return] = matlab2nexus_acquisitionInter
 %          19/12/2019: - height and mass entries 
 %          20/12/2019: - add end capture panels
 %                      - NexuspacketID incrementing for multiple capture
-%                      sessions, need to test this in lab.
-%          29/01/2020: - static capture only 50 frames, need to test
+%                      sessions [tested]
+%          29/01/2020: - static capture only 50 frames [tested]
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
-% ----------------------------------------------------------------------- %
-vicon_optical_fps = 200; % operating Hz for vicon optical devices
-vicon_static_capture = 50; % desired frame count for static capture
 % ----------------------------------------------------------------------- %
 endCaptureState = [];
 nexusPacketID_return = nexusPacketID;
@@ -699,7 +696,9 @@ h.acquisitionFig.nexusUDP(int8(nexusStart));
 if strcmp(h.acquisitionFig.thisCaptureString, "Calibration - Static")
     
     % pause for desired amount
-    pause(h.acquisitionFig.vicon_pause)
+    % 0.75 matlab pause gives 50 frame capture on nexus operating at 100Hz
+    % not sure why ...
+    pause(0.75)
     
     % update Nexus packet counter
     h.acquisitionFig.nexusPacketID = h.acquisitionFig.nexusPacketID + 1;

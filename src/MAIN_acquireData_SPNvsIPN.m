@@ -13,8 +13,7 @@
 %               - matlab2nexus_acquisitionInterface.m trial counters working
 %   - 17/12/19: - matlab2nexus_acquisitionInterface.m knee pain radio buttons
 %               - and write to csv file working
-%   - 20/12/19: - incrementing nexuspacketID for multiple sessions, need to
-%                 test this in the lab
+%   - 20/12/19: - incrementing nexuspacketID for multiple sessions
 %   - 29/01/20: - static capture only 50 frames
 %               
 % ----------------------------------------------------------------------- %
