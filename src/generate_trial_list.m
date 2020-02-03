@@ -1,4 +1,4 @@
-function [trial_list] = generate_trial_list2()
+function [trial_list] = generate_trial_list()
 % generate trial list string and randomise for data capture. For
 % randomisation, use randperm(N) where N is the number of rows, and
 % randperm(N) creates a vector of randomised order of integers from 1:N

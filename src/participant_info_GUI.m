@@ -1,4 +1,4 @@
-function [sessionString] = participant_info_GUI()
+function [sessionString, affectedSide] = participant_info_GUI()
 %% Get particiapnt info for data collection
 % user to enter in GUI
 %   - participant  ID (w radio button selection for healthy/clinical)
@@ -58,6 +58,11 @@ acquireData_pushButton_pos = [ 320 , 10 , 150 , 40 ];
 h.inputFig.sessionStringDisplay = ''; % intialise
 h.inputFig.sessionString.nail = '';
 h.inputFig.IDtextInputString = '<Enter Participant ID, then press Enter>';
+
+affectedSide_Text_pos = [ 320 , 120 , 150 , 40 ];
+affectedSide_Bgroup_position = [320 , 100 , 150 , 40];
+affectedSide_radio_pos = [5, 10, 75, 20;...
+    95, 10, 75, 20];
 
 %% initialise popup state value and string
 h.inputFig.popupValue = 1;
@@ -157,12 +162,39 @@ h.inputFig.acquireData_pushButton = uicontrol('Parent',    inputFig, ...
                     'string',   'ACQUIRE DATA',...
                     'callback', @acquireData_pushButtonCallback,...
                     'enable',  'off');
+h.inputFig.affectedSide_Text = uicontrol('Parent',    inputFig, ...
+                    'Style',    'text',...
+                    'Units',    'pixels', ...
+                    'String',   'Affected Side:',...
+                    'Position', affectedSide_Text_pos);
+h.inputFig.affectedSide_buttongroup = uibuttongroup('Parent', inputFig, ...
+                    'Visible',              'off',...
+                    'unit',                 'pixels',...
+                    'position',             affectedSide_Bgroup_position, ...
+                    'SelectionChangedFcn',  @affectedSide_radio_CallBack);
+h.inputFig.affectedSide_radio(1) = uicontrol('Parent',    h.inputFig.affectedSide_buttongroup, ...
+                    'unit',                 'pixels',...
+                    'style',                'radiobutton',...
+                    'position',             affectedSide_radio_pos(1,:), ...
+                    'string',               'Left', ...
+                    'value',                 1,...
+                    'enable',               'off');
+h.inputFig.affectedSide_radio(2) = uicontrol('Parent',    h.inputFig.affectedSide_buttongroup, ...
+                    'unit',                 'pixels',...
+                    'style',                'radiobutton',...
+                    'position',             affectedSide_radio_pos(2,:), ...
+                    'string',               'Right', ...
+                    'value',                 0,...
+                    'enable',               'off');
+h.inputFig.affectedSide_buttongroup.Visible = 'on'; % turn visibility on now buttons are made.
+h.inputFig.affectedSide_selection = h.inputFig.affectedSide_radio(1).String; % default value
                 
 h.inputFig.textEntered = 0;     % var to make sure Participant ID entered first 
 guidata(inputFig,h.inputFig);  % update handles
 uiwait(inputFig)
 inputData = get(0,'UserData');
 sessionString = inputData.sessionString;
+affectedSide = inputData.affectedSide;
 end
 
 %% CALLBACKS
@@ -268,7 +300,9 @@ if ~isnan(stringCheck) && length(h.inputFig.sessionString.participantID) == 3
     sessionStringDisplay = [ h.inputFig.sessionString.cohort h.inputFig.sessionString.participantID ...
         h.inputFig.sessionString.nail h.inputFig.sessionString.timePoint ];
     set(h.inputFig.sessionString_Display,'string',sessionStringDisplay,'visible','on');
-    set(h.inputFig.acquireData_pushButton,'enable','on')
+    set(h.inputFig.affectedSide_radio(1),'enable','on');
+    set(h.inputFig.affectedSide_radio(2),'enable','on');
+    set(h.inputFig.acquireData_pushButton,'enable','on');
 else
     warndlg('Participant ID must be numeric with length 3','ERROR: Incorrect Particiapnt ID')
 end
@@ -281,8 +315,15 @@ function acquireData_pushButtonCallback(acquireData_pushButton_object,~,~)
 h.inputFig = guidata(acquireData_pushButton_object);
 % store session string as matlab root UserData structure so it can be
 % accessed once the inputFig is closed by acquireData_pushButtonCallback
-inputData = struct('sessionString',h.inputFig.sessionString_Display.String);
+inputData = struct('sessionString',h.inputFig.sessionString_Display.String,'affectedSide',h.inputFig.affectedSide_selection);
 set(0,'UserData',inputData);
 guidata(acquireData_pushButton_object,h.inputFig)
 close(get(acquireData_pushButton_object,'Parent'))    % close parent of acquireData_pushButton_object (inputFig)
+end
+
+%%
+function affectedSide_radio_CallBack(affectedSide_radio_object,event,~)
+h.inputFig = guidata(affectedSide_radio_object);
+h.inputFig.affectedSide_selection = event.NewValue.String; % store current selection
+guidata(affectedSide_radio_object,h.inputFig)
 end

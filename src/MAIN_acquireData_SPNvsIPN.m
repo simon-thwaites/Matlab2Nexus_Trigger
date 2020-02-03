@@ -45,7 +45,7 @@ disp('Force platforms and EMGs zeroed.')
 
 while anotherCapture
     % participant and session information
-    sessionString = participant_info_GUI();
+    [sessionString, affectedSide]= participant_info_GUI();
     
     % check/male directories
     pathList = makeDirectories(sessionString);
@@ -60,7 +60,7 @@ while anotherCapture
     
     % launch acquisition interface
     disp('Launching Acquisition Interface ...')
-    [endCaptureState, nexusPacketID_return] = matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list, nexusPacketID);
+    [endCaptureState, nexusPacketID_return] = matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list, nexusPacketID, affectedSide);
     drawnow()
     switch endCaptureState
         case 1 % another capture

@@ -1,4 +1,4 @@
-function [endCaptureState, nexusPacketID_return] = matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list, nexusPacketID)
+function [endCaptureState, nexusPacketID_return] = matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list, nexusPacketID, affectedSide)
 % main acquisition interface for data capture
 %-------------------------------------------------------------------------%
 % Vicon Nexus:
@@ -121,6 +121,7 @@ trial_list_text_position = [0.01 0.01 0.8 0.98];
 % add the pathlists and session string to the handle
 h.acquisitionFig.pathList = pathList;
 h.acquisitionFig.sessionString = sessionString;
+h.acquisitionFig.affectedSIde = affectedSide;
 
 % end capture objects
 xOffset = 0.01; yOffset = 0.05; width = 0.3; height = 0.9; gap = 0.04;
@@ -160,13 +161,22 @@ h.acquisitionFig.kneePain_currentValue = 'None';
 
 % initialise knee pain csv
 h.acquisitionFig.kneePain_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'];
-h.acquisitionFig.kneePain_cell = {'Participant Session',sessionString;'TrialName','KneePain'};
+h.acquisitionFig.kneePain_cell = {'ParticipantSession',sessionString;'TrialName','KneePain'};
 writecell(h.acquisitionFig.kneePain_cell,h.acquisitionFig.kneePain_csvFullFile)
 
 % participant info full file
 h.acquisitionFig.participantInfo_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\Participant-Info.csv'];
 h.acquisitionFig.participantInfo_heightValue_valid = 0;
 h.acquisitionFig.participantInfo_massValue_valid = 0;
+h.acquisitionFig.participantInfo_cell = ...
+    {'ParticipantSession', h.acquisitionFig.sessionString;...
+    'AffectedSide', h.acquisitionFig.affectedSIde};
+writecell(h.acquisitionFig.participantInfo_cell,h.acquisitionFig.participantInfo_csvFullFile)
+
+% initialise microFET2 dynamometer csv file
+h.acquisitionFig.microFET2_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\microFET2.csv'];
+h.acquisitionFig.microFET2_cell = {'ParticipantSession',sessionString,'<missing>','<missing>';'TrialName','PeakForce_lbs','Duration','PeakForce_N'};
+writecell(h.acquisitionFig.microFET2_cell,h.acquisitionFig.microFET2_csvFullFile)
 
 %% initialise UDP object
 h.acquisitionFig.IPaddress = '255.255.255.255';     % broadcast over everything
@@ -790,6 +800,11 @@ h.acquisitionFig.nexusUDP(int8(nexusComplete));
 set(h.acquisitionFig.stop_button, 'enable', 'off');
 set(h.acquisitionFig.stop_button, 'BackgroundColor', h.acquisitionFig.leftright_colour)
 
+% entries if dyno tests
+if strcmp(h.acquisitionFig.thisCaptureString, "Max_iso_quad - Affected") || strcmp(h.acquisitionFig.thisCaptureString,"Max_iso_quad - Unaffected")
+    store_microFET2_values(h.acquisitionFig.microFET2_csvFullFile, h.acquisitionFig.thisCaptureSavingAs)
+end
+
 % enable knee pain buttons
 set(h.acquisitionFig.kneePain_storeSelection_button, 'enable', 'on');
 for i = 1:5
@@ -799,7 +814,7 @@ end
 set(h.acquisitionFig.kneePain_storeSelection_button, ...
     'BackgroundColor', h.acquisitionFig.highlight_button_colour);
 
-% store this value before updateing counters to write to csv
+% store this value before updating counters to write to csv
 h.acquisitionFig.saveTrial = h.acquisitionFig.thisCaptureSavingAs;
 
 % update trial counters
@@ -914,11 +929,10 @@ function participantInfo_pushbutton_CallBack(button_object, ~, ~)
 h.acquisitionFig = guidata(button_object);
 set(h.acquisitionFig.participantInfo_pushbutton,'enable','off')
 set(h.acquisitionFig.participantInfo_pushbutton,'BackgroundColor',h.acquisitionFig.staticText_backgroundColour)
-h.acquisitionFig.participantInfo_cell = ...
-    {'Participant Session', h.acquisitionFig.sessionString;...
-    'Height (cm)', h.acquisitionFig.participantInfo_heightValue;...
-    'Body mass (kg)', h.acquisitionFig.participantInfo_massValue};
-writecell(h.acquisitionFig.participantInfo_cell,h.acquisitionFig.participantInfo_csvFullFile)
+oldCsv = readcell(h.acquisitionFig.participantInfo_csvFullFile);
+newCsv = [oldCsv;{'Height (cm)', h.acquisitionFig.participantInfo_heightValue;...
+    'Body mass (kg)', h.acquisitionFig.participantInfo_massValue}];
+writecell(newCsv,h.acquisitionFig.participantInfo_csvFullFile)
 
 guidata(button_object, h.acquisitionFig) % update handles
 end
