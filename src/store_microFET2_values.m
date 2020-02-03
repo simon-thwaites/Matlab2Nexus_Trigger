@@ -7,10 +7,14 @@ dlgtitle = 'Max. Thigh Muscle Strength (microFET2)';
 dims = [1 70];
 answer = inputdlg(prompt,dlgtitle,dims);
 
+% convert lbs to N
 peakForce_N = num2str(str2double(answer{1})*4.44822);
+
+% read old csv
 oldCsv = readcell(pathName);
 
-% csv file: 'TrialName','PeakForce_lbs','Duration','PeakForce_N'
+% append then write new file
+% csv file layout: 'TrialName','PeakForce_lbs','Duration','PeakForce_N'
 newCsv = [oldCsv;{trialString,  answer{1}, answer{2}, peakForce_N}];
 writecell(newCsv,pathName)
 end
