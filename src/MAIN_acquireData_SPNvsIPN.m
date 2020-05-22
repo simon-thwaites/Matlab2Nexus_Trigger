@@ -35,17 +35,7 @@
 % ----------------------------------------------------------------------- %
 close all; close('all','hidden');  % Close figure opened by last run
 clc;
-
-machine_ip = getIPaddress();
-if  strcmp(machine_ip, '10.90.20.114')
-    % work machine
-    user = 'a1194788';
-else
-    % home machine
-    user = 'Simon';
-end
-
-cd(['C:\Users\', user, '\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\'])
+cd('C:\Users\a1194788\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\')
 
 nexusPacketID = 0; % initialise for incrementing UDP packets (required for Nexus)
 anotherCapture = true; 
