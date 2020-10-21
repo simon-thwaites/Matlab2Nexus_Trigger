@@ -33,6 +33,7 @@ function [endCaptureState, nexusPacketID_return] = matlab2nexus_acquisitionInter
 % ----------------------------------------------------------------------- %
 endCaptureState = [];
 nexusPacketID_return = nexusPacketID;
+
 %% Create main figure
 figTag = 'acq_figTag';
 acquisitionFig = figure('numbertitle',      'off', ...
@@ -46,7 +47,8 @@ acquisitionFig = figure('numbertitle',      'off', ...
                 'outerposition',    [0.2 0.2 0.6 0.6],...
                 'HandleVisibility', 'callback'); % hide the handle to prevent unintended modifications
 h.acquisitionFig = guihandles(acquisitionFig); % create handles attached to acquisitionFig
-
+h.acquisitionFig.stepTest_zeroWarning = 0;
+h.acquisitionFig.staticMarker_warning = 0;
 %% define GUI object positions (x-pos,y-pos, x-width, y-height)
 % h.acquisitionFig.staticText_backgroundColour = [0.85 0.85 0.85];
 h.acquisitionFig.staticText_backgroundColour = [0.94 0.94 0.94];
@@ -671,6 +673,22 @@ end
 %%
 function start_button_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
+
+% check for if calib test, if so, warning for marker placement
+if strcmp(h.acquisitionFig.thisCaptureString, "Calibration - Static") && h.acquisitionFig.staticMarker_warning == 0;
+    h.acquisitionFig.staticMarker_warning = 1;
+    w1 = warndlg('ALL MARKERS IN PLACE?','Marker Check!');
+    uiwait(w1)
+    disp('Max isometric tests complete. All markers in place.')
+end
+
+% check for if step test, if so, warning to zero FPs
+if strcmp(h.acquisitionFig.thisCaptureString, "Step Test") && h.acquisitionFig.stepTest_zeroWarning == 0
+    h.acquisitionFig.stepTest_zeroWarning = 1;
+    w1 = warndlg('FORCE PLATFORMS ZEROED?','Step Test - Hardware Check!');
+    uiwait(w1)
+    disp('Force platforms zeroed for Step Test.')
+end
 
 % disble all buttons including start
 set(h.acquisitionFig.previousTrial_button, 'enable', 'off');

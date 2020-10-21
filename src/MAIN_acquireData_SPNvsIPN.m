@@ -15,10 +15,13 @@
 %               - and write to csv file working
 %   - 20/12/19: - incrementing nexuspacketID for multiple sessions
 %   - 29/01/20: - static capture only 50 frames
+%   - 21/10/20: - updated trial list
+%   - 22/10/20: - add in extra warnings for zeroing FPs after step test
 %               
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
-% simonthwaites1991@gmail.com
+% simon.thwaites@adelaide.edu.au
+% simon.thwaites.biomech@gmail.com
 % ----------------------------------------------------------------------- %
 % Vicon Nexus:
 %   - In 'auto start/stop capture', ensure 'advanced' is selected, and 
@@ -40,7 +43,7 @@ cd('C:\Users\a1194788\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\')
 nexusPacketID = 0; % initialise for incrementing UDP packets (required for Nexus)
 anotherCapture = true; 
 
-w1 = warndlg('FORCE PLATFORMS and EMGs ZEROED?','Hardware Check!');
+w1 = warndlg('FORCE PLATFORMS and EMGs ZEROED?','Zero Check!');
 uiwait(w1)
 disp('Force platforms and EMGs zeroed.')
 
