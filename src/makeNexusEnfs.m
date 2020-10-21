@@ -38,14 +38,18 @@ else
     end
 end
 
-if ~exist([ pwd , '\' , cohort ],'dir')
+% if ~exist([ pwd , '\' , cohort ],'dir')
+%     mkdir([ pwd , '\' , cohort ])
+% end
+if ~isfolder([ pwd , '\' , cohort ])
     mkdir([ pwd , '\' , cohort ])
 end
 cd([ pwd , '\' , cohort ])
 pathList.cohort_dir = pwd;
 
 % check patient classifaction .enf file exists
-if ~exist([ cohort , '.Patient Classification.enf'], 'file')
+% if ~exist([ cohort , '.Patient Classification.enf'], 'file')
+if ~isfile([ cohort , '.Patient Classification.enf'])
     
     % date and time paramaters to write to the .enf file
     cd(pathList.src_dir);
@@ -62,7 +66,8 @@ end
 
 % now check ID string and make directory
 if ~isnan(str2double(idString))
-    if ~exist([ pwd , '\' , cohortIDstring ],'dir')
+%     if ~exist([ pwd , '\' , cohortIDstring ],'dir')
+    if ~isfolder([ pwd , '\' , cohortIDstring ])
         mkdir([ pwd , '\' , cohortIDstring ])
     end
 else
@@ -74,7 +79,8 @@ cd([ pwd ,  '\' , cohortIDstring ]);
 pathList.particpantID_dir = pwd;
 
 % check for pateint.enf
-if ~exist([ cohortIDstring , '.Patient.enf' ],'file')
+% if ~exist([ cohortIDstring , '.Patient.enf' ],'file')
+if ~isfile([ cohortIDstring , '.Patient.enf' ])
     % date and time paramaters to write to the .enf file
     cd(pathList.src_dir);
     creationString = getDateTime();
@@ -97,7 +103,8 @@ if isempty(nexusSessionString)
 end
 
 % now check if there is a session directory
-if ~exist([ pwd , '\' , nexusSessionString ],'dir')
+% if ~exist([ pwd , '\' , nexusSessionString ],'dir')
+if ~isfolder([ pwd , '\' , nexusSessionString ])
     mkdir([ pwd , '\' , nexusSessionString ])
 end
 
@@ -105,7 +112,8 @@ cd([ pwd , '\' , nexusSessionString ]);
 pathList.session_dir = pwd;
 
 % check for session .enf
-if ~exist([nexusSessionString,'.Session.enf'],'file')
+% if ~exist([nexusSessionString,'.Session.enf'],'file')
+if ~isfile([nexusSessionString,'.Session.enf'])
     % date and time paramaters to write to the .enf file
     cd(pathList.src_dir);
     creationString = getDateTime();
