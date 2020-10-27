@@ -38,7 +38,16 @@
 % ----------------------------------------------------------------------- %
 close all; close('all','hidden');  % Close figure opened by last run
 clc;
-cd('C:\Users\a1194788\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\')
+
+machine_ip = getIPaddress();    % check which machine
+
+if  strcmp(machine_ip, '10.90.20.114')
+    % work desktop machine
+    cd('C:\Users\a1194788\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\')
+elseif strcmp(machine_ip, '10.90.14.67')
+    % gait lab machine
+    cd('C:\Thwaites PhD\Matlab2Nexus_Trigger-Knee-Pain\src\')
+end
 
 nexusPacketID = 0; % initialise for incrementing UDP packets (required for Nexus)
 anotherCapture = true; 
@@ -60,7 +69,7 @@ while anotherCapture
     % warnings to set Vicon Nexus database
     w2 = warndlg('Nexus ECLIPSE DATABASE correct and ARMED for capture?','Vicon Nexus Check!');
     uiwait(w2)
-    disp('Nexus databse correct and armed for capture.')
+    disp('Nexus database correct and armed for capture.')
     
     % launch acquisition interface
     disp('Launching Acquisition Interface ...')

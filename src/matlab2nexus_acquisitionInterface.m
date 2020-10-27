@@ -49,6 +49,9 @@ acquisitionFig = figure('numbertitle',      'off', ...
 h.acquisitionFig = guihandles(acquisitionFig); % create handles attached to acquisitionFig
 h.acquisitionFig.stepTest_zeroWarning = 0;
 h.acquisitionFig.staticMarker_warning = 0;
+h.acquisitionFig.fsr_warning = 0;
+h.acquisitionFig.kneePad_warning = 0;
+
 %% define GUI object positions (x-pos,y-pos, x-width, y-height)
 % h.acquisitionFig.staticText_backgroundColour = [0.85 0.85 0.85];
 h.acquisitionFig.staticText_backgroundColour = [0.94 0.94 0.94];
@@ -535,17 +538,18 @@ guidata(acquisitionFig,h.acquisitionFig);
 waitfor(acquisitionFig); 
 end
 
-% ======================================================================= %
+
 %% CALLBACKS
 % ======================================================================= %
-% Comment Callbacks
+
+%% Comment Callbacks
 % ======================================================================= %
 function comment_CallBack(text_object, ~, ~)
 h.acquisitionFig = guidata(text_object);
 set(h.acquisitionFig.comment_updateButton, 'Enable', 'on'); % enable button to save file
 guidata(text_object, h.acquisitionFig) % update handles
 end
-%%
+%
 function comment_updateButton_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 h.acquisitionFig.commentString = h.acquisitionFig.comment_editField.String;
@@ -559,7 +563,7 @@ fclose(fileID);
 
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-% ======================================================================= %
+
 %% Capture Callbacks
 % ======================================================================= %
 function nextTrial_button_CallBack(pushButton_object, ~, ~)
@@ -606,7 +610,7 @@ if counter < length(h.acquisitionFig.trialCellArray) + 1
 end
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-%%
+%
 function previousTrial_button_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 
@@ -670,16 +674,25 @@ else
 end
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-%%
+%
 function start_button_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 
 % check for if calib test, if so, warning for marker placement
-if strcmp(h.acquisitionFig.thisCaptureString, "Calibration - Static") && h.acquisitionFig.staticMarker_warning == 0;
+if strcmp(h.acquisitionFig.thisCaptureString, "Calibration - Static") && h.acquisitionFig.staticMarker_warning == 0
     h.acquisitionFig.staticMarker_warning = 1;
     w1 = warndlg('ALL MARKERS IN PLACE?','Marker Check!');
     uiwait(w1)
-    disp('Max isometric tests complete. All markers in place.')
+    disp('Max isometric tests complete. All markers in place for  calibration trials.')
+end
+
+% check for if calib tests done, if so, warning for calib only markers
+% removed
+if ~ismember(h.acquisitionFig.thisCaptureString, ["Calibration - Static", "Calibration - Functional"]) && h.acquisitionFig.staticMarker_warning == 1
+    h.acquisitionFig.staticMarker_warning = 2;
+    w1 = warndlg('CALIB ONLY MARKERS REMOVED? (med & lat knee & dorsal foot markers)','Marker Check!');
+    uiwait(w1)
+    disp('Calibration trials complete. Calibration only markers removed.')
 end
 
 % check for if step test, if so, warning to zero FPs
@@ -689,6 +702,36 @@ if strcmp(h.acquisitionFig.thisCaptureString, "Step Test") && h.acquisitionFig.s
     uiwait(w1)
     disp('Force platforms zeroed for Step Test.')
 end
+
+% check for if step test complete, warning to zero FPs
+if ~strcmp(h.acquisitionFig.thisCaptureString, "Step Test") && h.acquisitionFig.stepTest_zeroWarning == 1
+    h.acquisitionFig.stepTest_zeroWarning = 2;
+    w1 = warndlg('FORCE PLATFORMS ZEROED?','Step Test - Hardware Check!');
+    uiwait(w1)
+    disp('Force platforms zeroed after Step Test.')
+end
+
+% check if fsr trial
+if contains(h.acquisitionFig.thisCaptureString, "No pads") && h.acquisitionFig.fsr_warning == 0
+    h.acquisitionFig.fsr_warning = 1;
+    w1 = warndlg('FSRs IN PLACE?','FSR Check!');
+    uiwait(w1)
+    disp('FSRs in place.')
+    
+    w1 = warndlg('FSRs CONFIG PHOTO TAKEN?','FSR Check!');
+    uiwait(w1)
+    disp('FSR config photo taken.')
+end
+
+% check for knee pads in place
+if contains(h.acquisitionFig.thisCaptureString, "Pads") && h.acquisitionFig.kneePad_warning == 0
+    h.acquisitionFig.kneePad_warning = 1;
+    w1 = warndlg('KNEE PADS ON?','Knee Pad Check!');
+    uiwait(w1)
+    disp('Knee pads on.')
+end
+
+
 
 % disble all buttons including start
 set(h.acquisitionFig.previousTrial_button, 'enable', 'off');
@@ -782,7 +825,7 @@ end
 
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-%%
+%
 function stop_button_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 
@@ -845,7 +888,7 @@ set(h.acquisitionFig.savingAs_dynamicText, 'String', h.acquisitionFig.thisCaptur
 
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-% ======================================================================= %
+
 %% Knee pain call backs
 % ======================================================================= %
 function kneePain_radio_CallBack(kneePain_radioButton_object, event, ~)
@@ -896,7 +939,7 @@ end
 
 guidata(kneePain_pushbutton_object, h.acquisitionFig) % update handles
 end
-% ======================================================================= %
+
 %% Height and mass Callbacks
 % ======================================================================= %
 function height_CallBack(height_object, ~, ~)
@@ -920,7 +963,7 @@ else
 end
 guidata(height_object, h.acquisitionFig) % update handles
 end
-%%
+%
 function mass_CallBack(mass_object, ~, ~)
 h.acquisitionFig = guidata(mass_object);
 h.acquisitionFig.participantInfo_massValue = h.acquisitionFig.participantInfo_massField.String;
@@ -942,7 +985,7 @@ else
 end
 guidata(mass_object, h.acquisitionFig) % update handles
 end
-%%
+%
 function participantInfo_pushbutton_CallBack(button_object, ~, ~)
 h.acquisitionFig = guidata(button_object);
 set(h.acquisitionFig.participantInfo_pushbutton,'enable','off')
@@ -954,7 +997,8 @@ writecell(newCsv,h.acquisitionFig.participantInfo_csvFullFile)
 
 guidata(button_object, h.acquisitionFig) % update handles
 end
-% % ======================================================================= %
+
+
 % %% End capture Callbacks
 % % ======================================================================= %
 % function newSession_pushbutton_CallBack(button_object,~,~)
