@@ -51,6 +51,7 @@ h.acquisitionFig.stepTest_zeroWarning = 0;
 h.acquisitionFig.staticMarker_warning = 0;
 h.acquisitionFig.fsr_warning = 0;
 h.acquisitionFig.kneePad_warning = 0;
+h.acquisitionFig.EMG_warning = 0;
 
 %% define GUI object positions (x-pos,y-pos, x-width, y-height)
 % h.acquisitionFig.staticText_backgroundColour = [0.85 0.85 0.85];
@@ -711,7 +712,8 @@ if ~strcmp(h.acquisitionFig.thisCaptureString, "Step Test") && h.acquisitionFig.
     disp('Force platforms zeroed after Step Test.')
 end
 
-% check if fsr trial
+% check if fsr trial. contains() checks if "smallString" exists in
+% "largeString"
 if contains(h.acquisitionFig.thisCaptureString, "No pads") && h.acquisitionFig.fsr_warning == 0
     h.acquisitionFig.fsr_warning = 1;
     w1 = warndlg('FSRs IN PLACE?','FSR Check!');
@@ -731,7 +733,13 @@ if contains(h.acquisitionFig.thisCaptureString, "Pads") && h.acquisitionFig.knee
     disp('Knee pads on.')
 end
 
-
+% checks for EMGs in place for the dyno tests
+if contains(h.acquisitionFig.thisCaptureString, "Max_iso_quad") && h.acquisitionFig.EMG_warning == 0
+    h.acquisitionFig.EMG_warning = 1;
+    w1 = warndlg('EMGs attached for Max. iso. quad. test?','EMG Check!');
+    uiwait(w1)
+    disp('EMGs attached for Max. iso. quad. test.')
+end
 
 % disble all buttons including start
 set(h.acquisitionFig.previousTrial_button, 'enable', 'off');
