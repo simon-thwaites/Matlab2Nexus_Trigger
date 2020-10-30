@@ -52,10 +52,6 @@ end
 nexusPacketID = 0; % initialise for incrementing UDP packets (required for Nexus)
 anotherCapture = true; 
 
-w1 = warndlg('FORCE PLATFORMS and EMGs ZEROED?','Zero Check!');
-uiwait(w1)
-disp('Force platforms and EMGs zeroed.')
-
 while anotherCapture
     % participant and session information
     [sessionString, affectedSide]= participant_info_GUI();
@@ -70,6 +66,10 @@ while anotherCapture
     w2 = warndlg('Nexus ECLIPSE DATABASE correct and ARMED for capture?','Vicon Nexus Check!');
     uiwait(w2)
     disp('Nexus database correct and armed for capture.')
+    
+    w1 = warndlg('FORCE PLATFORMS and EMGs ZEROED?','Zero Check!');
+    uiwait(w1)
+    disp('Force platforms and EMGs zeroed.')
     
     % launch acquisition interface
     disp('Launching Acquisition Interface ...')

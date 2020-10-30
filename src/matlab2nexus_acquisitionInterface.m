@@ -165,13 +165,22 @@ h.acquisitionFig.trialCellArray_completed_counter = 0;
 % starting value for knee pain selection
 h.acquisitionFig.kneePain_currentValue = 'None';
 
+% write all the csv and txt files to a new directory for easier viewing
+h.acquisitionFig.pathList.acquisitionInfo_dir = ...
+        [ h.acquisitionFig.pathList.session_dir , '\Acquisition-Info' ]; % create directory path string
+if ~isfolder(h.acquisitionFig.pathList.acquisitionInfo_dir) % check exists, if not create directory
+    mkdir(h.acquisitionFig.pathList.acquisitionInfo_dir)
+end
+
 % initialise knee pain csv
-h.acquisitionFig.kneePain_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'];
+% h.acquisitionFig.kneePain_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'];
+h.acquisitionFig.kneePain_csvFullFile = [h.acquisitionFig.pathList.acquisitionInfo_dir,'\Knee-Pain.csv'];
 h.acquisitionFig.kneePain_cell = {'ParticipantSession',sessionString;'TrialName','KneePain'};
 writecell(h.acquisitionFig.kneePain_cell,h.acquisitionFig.kneePain_csvFullFile)
 
 % participant info full file
-h.acquisitionFig.participantInfo_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\Participant-Info.csv'];
+% h.acquisitionFig.participantInfo_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\Participant-Info.csv'];
+h.acquisitionFig.participantInfo_csvFullFile = [h.acquisitionFig.pathList.acquisitionInfo_dir,'\Participant-Info.csv'];
 h.acquisitionFig.participantInfo_heightValue_valid = 0;
 h.acquisitionFig.participantInfo_massValue_valid = 0;
 h.acquisitionFig.participantInfo_cell = ...
@@ -180,7 +189,8 @@ h.acquisitionFig.participantInfo_cell = ...
 writecell(h.acquisitionFig.participantInfo_cell,h.acquisitionFig.participantInfo_csvFullFile)
 
 % initialise microFET2 dynamometer csv file
-h.acquisitionFig.microFET2_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\microFET2.csv'];
+% h.acquisitionFig.microFET2_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\microFET2.csv'];
+h.acquisitionFig.microFET2_csvFullFile = [h.acquisitionFig.pathList.acquisitionInfo_dir,'\microFET2.csv'];
 h.acquisitionFig.microFET2_cell = {'ParticipantSession',sessionString,'<missing>','<missing>';'TrialName','PeakForce_lbs','Duration','PeakForce_N'};
 writecell(h.acquisitionFig.microFET2_cell,h.acquisitionFig.microFET2_csvFullFile)
 
@@ -557,7 +567,8 @@ h.acquisitionFig.commentString = h.acquisitionFig.comment_editField.String;
 set(h.acquisitionFig.comment_updateButton, 'Enable', 'on');
 
 % save/overwrite the Comments.txt file
-fileID = fopen([h.acquisitionFig.pathList.session_dir,'\Comments.txt'],'w');
+% fileID = fopen([h.acquisitionFig.pathList.session_dir,'\Comments.txt'],'w');
+fileID = fopen([h.acquisitionFig.pathList.acquisitionInfo_dir,'\Comments.txt'],'w');
 fprintf(fileID, '~~~\r\nSessionID: \r\n%s\r\n~~~\r\n', h.acquisitionFig.sessionString);
 fprintf(fileID, 'Comments: \r\n%s\r\n~~~', h.acquisitionFig.commentString);
 fclose(fileID);

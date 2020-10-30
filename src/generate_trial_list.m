@@ -29,10 +29,19 @@ trial_list_1 = trial_list_1(randperm(size(trial_list_1, 1)), :);
 
 trial_list_start = [trial_list_1; trial_list_2];
 
-trial_list_3 = ["Timed up-and-go", "upNgo", "5"; ...
-                "Timed sitting leg extension - Affected", "legExt_aff", "6"; ...
+% want to randomise the order of these but keep the leg ext. tests here
+% together
+trial_list_3a = ["Timed up-and-go", "upNgo", "5"];
+trial_list_3b = ["Timed sitting leg extension - Affected", "legExt_aff", "6"; ...
                 "Timed sitting leg extension - Unaffected", "legExt_unaff", "7"];
-trial_list_3 = trial_list_3(randperm(size(trial_list_3, 1)), :); % randomise      
+
+trial_list_3b = trial_list_3b(randperm(size(trial_list_3b, 1)), :); % randomise
+
+trial_list_3 = {trial_list_3a; trial_list_3b}; % combine
+
+trial_list_3 = trial_list_3(randperm(size(trial_list_3, 1)), :);
+
+trial_list_3 = [trial_list_3{1}; trial_list_3{2}]; 
 
 trial_list_4 = ["Anterior reach - Affected", "antReach_aff", "8"; ...
                 "Anterior reach - Unaffected", "antReach_unaff", "9"; ...
