@@ -57,6 +57,8 @@ h.acquisitionFig.EMG_warning = 0;
 % h.acquisitionFig.staticText_backgroundColour = [0.85 0.85 0.85];
 h.acquisitionFig.staticText_backgroundColour = [0.94 0.94 0.94];
 h.acquisitionFig.highlight_button_colour = [0.9290, 0.6940, 0.1250];
+% h.acquisitionFig.nowCapturing_backgroundColour = [70, 130, 180] / 255; % steel blue
+h.acquisitionFig.nowCapturing_backgroundColour = [176, 196, 222] / 255; % light steel blue
 
 % panel positions
 trial_list_panel_position = [0.63 0.16 0.35 0.82];
@@ -111,7 +113,12 @@ kneePain_staticText_position = ...
 kneePainInfo_staticText_position = ...
     [offset radio_yPos+offset 0.5 0.05];
 kneePain_storeSelection_button_position = ...
-    [offset*4+radio_length*5 0.04 0.2 0.2];
+    [offset*4+radio_length*5 offset 0.2 0.1225];
+%     [offset*4+radio_length*5 0.04 0.2 0.2]
+kneePain_DNC_button_position = ...
+    [offset*4+radio_length*5 offset*2+0.1225 0.2 0.1225];
+
+    
 
 % participant info (mass/height) objects
 participantInfo_panel_position = [0.525 0.75 0.475 0.27];
@@ -171,6 +178,10 @@ h.acquisitionFig.pathList.acquisitionInfo_dir = ...
 if ~isfolder(h.acquisitionFig.pathList.acquisitionInfo_dir) % check exists, if not create directory
     mkdir(h.acquisitionFig.pathList.acquisitionInfo_dir)
 end
+
+cd(h.acquisitionFig.pathList.acquisitionInfo_dir)
+diary CommandWindowLog
+cd(h.acquisitionFig.pathList.src_dir)
 
 % initialise knee pain csv
 % h.acquisitionFig.kneePain_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'];
@@ -279,7 +290,10 @@ h.acquisitionFig.trial_list_text = uicontrol('Parent', h.acquisitionFig.trial_li
     'Units',                'normalized', ...
     'FontSize',             12, ...
     'Position',             trial_list_text_position, ...
-    'String',               h.acquisitionFig.trialCellArray(:,1));
+    'String',               h.acquisitionFig.trialCellArray(:,1), ...
+    'Min',                  0, ... 
+    'Max',                  2, ...
+    'Value',                []);
 
 %% capture panel objects
 h.acquisitionFig.nowCapturing_staticText = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
@@ -294,10 +308,11 @@ h.acquisitionFig.nowCapturing_dynamicText = uicontrol('Parent',    h.acquisition
     'Style',                'text',...
     'Units',                'normalized', ...
     'String',               h.acquisitionFig.thisCaptureString,...
-    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
+    'BackgroundColor',      h.acquisitionFig.nowCapturing_backgroundColour, ...
     'Position',             nowCapturing_dynamicText_position, ...
     'HorizontalAlignment',  'left', ...
-    'FontSize',             10);
+    'FontSize',             10, ...
+    'FontWeight',           'bold');
 h.acquisitionFig.trialNumber_staticText = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
     'Style',                'text',...
     'Units',                'normalized', ...
@@ -448,6 +463,15 @@ h.acquisitionFig.kneePain_storeSelection_button = uicontrol('Parent',    h.acqui
     'FontSize',             8, ...
     'callback',             @kneePain_storeSelection_CallBack,...
     'enable',               'off');
+h.acquisitionFig.kneePain_DNC_button = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
+    'Style',                'pushbutton',...
+    'Units',                'normalized', ...
+    'String',               'Did Not Complete',...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
+    'Position',             kneePain_DNC_button_position, ...
+    'FontSize',             8, ...
+    'callback',             @kneePain_DNC_CallBack,...
+    'enable',               'off');
 
 %% participant Info section
 h.acquisitionFig.participantInfo_heightField = uicontrol('Parent', h.acquisitionFig.participantInfo_panel, ...
@@ -588,6 +612,7 @@ set(h.acquisitionFig.nextTrial_button, 'BackgroundColor', h.acquisitionFig.stati
 
 % disable knee pain field
 set(h.acquisitionFig.kneePain_storeSelection_button, 'enable', 'off');
+set(h.acquisitionFig.kneePain_DNC_button, 'enable', 'on'); % enable DNC
 for i = 1:5
    set(h.acquisitionFig.kneePain_radio(i), 'enable', 'off');
 end
@@ -601,6 +626,7 @@ if counter < length(h.acquisitionFig.trialCellArray) + 1
     set(h.acquisitionFig.nowCapturing_dynamicText, 'String', h.acquisitionFig.thisCaptureString);
     set(h.acquisitionFig.trialNumber_dynamicText, 'String', h.acquisitionFig.thisCaptureNumber);
     set(h.acquisitionFig.savingAs_dynamicText, 'String', h.acquisitionFig.thisCaptureSavingAs);
+    h.acquisitionFig.saveTrial = h.acquisitionFig.thisCaptureSavingAs;
     
     % remove the current capture from the trial list panel and add to completed
     % list
@@ -657,6 +683,7 @@ if counter ~= 0
     % once get back to zero, disable previous button, highlight next trial
     % button
     if counter == 0
+        set(h.acquisitionFig.kneePain_DNC_button, 'enable', 'off');
         set(h.acquisitionFig.previousTrial_button, 'enable', 'off');
         set(h.acquisitionFig.previousTrial_button, 'BackgroundColor', h.acquisitionFig.leftright_colour)
         set(h.acquisitionFig.start_button, 'enable', 'off');
@@ -676,6 +703,7 @@ if counter ~= 0
         set(h.acquisitionFig.nowCapturing_dynamicText, 'String', h.acquisitionFig.thisCaptureString);
         set(h.acquisitionFig.trialNumber_dynamicText, 'String', h.acquisitionFig.thisCaptureNumber);
         set(h.acquisitionFig.savingAs_dynamicText, 'String', h.acquisitionFig.thisCaptureSavingAs);
+        h.acquisitionFig.saveTrial = h.acquisitionFig.thisCaptureSavingAs;
     end
 else
     % if back to start of trial list, disable previous button, highlight
@@ -758,6 +786,7 @@ set(h.acquisitionFig.start_button, 'enable', 'off');
 set(h.acquisitionFig.start_button, 'BackgroundColor', h.acquisitionFig.leftright_colour)
 set(h.acquisitionFig.nextTrial_button, 'enable', 'off');
 set(h.acquisitionFig.kneePain_storeSelection_button, 'enable', 'off');
+set(h.acquisitionFig.kneePain_DNC_button, 'enable', 'off');
 for i = 1:5
    set(h.acquisitionFig.kneePain_radio(i), 'enable', 'off');
 end
@@ -940,6 +969,7 @@ if counter > 0 && counter < length(h.acquisitionFig.trialCellArray) + 1
     set(h.acquisitionFig.start_button, 'enable', 'on');
     set(h.acquisitionFig.start_button, 'BackgroundColor', h.acquisitionFig.start_colour)
     set(h.acquisitionFig.previousTrial_button, 'enable', 'on');
+    set(h.acquisitionFig.kneePain_DNC_button, 'enable', 'on'); % enable DNC
     if counter == length(h.acquisitionFig.trialCellArray) % no more trials so disable next trial.
         set(h.acquisitionFig.nextTrial_button, 'enable', 'off');
         set(h.acquisitionFig.previousTrial_button, 'enable', 'on');
@@ -950,6 +980,7 @@ end
 
 % if at start of trial list, only next trial button can be pressed
 if counter == 0    
+    set(h.acquisitionFig.kneePain_DNC_button, 'enable', 'off');
     set(h.acquisitionFig.previousTrial_button, 'enable', 'off');
     set(h.acquisitionFig.start_button, 'enable', 'off');
     set(h.acquisitionFig.start_button, 'BackgroundColor', h.acquisitionFig.leftright_colour)
@@ -957,6 +988,42 @@ if counter == 0
 end
 
 guidata(kneePain_pushbutton_object, h.acquisitionFig) % update handles
+end
+
+function kneePain_DNC_CallBack(kneePain_DNC_pushbutton_object , ~, ~)
+h.acquisitionFig = guidata(kneePain_DNC_pushbutton_object);
+
+% warning to write DNC
+w1 = warndlg('Write DNC (Did Not Complete) to file?','Particpant unable to complete test');
+uiwait(w1)
+disp(['Participant unable to complete trial: ', h.acquisitionFig.thisCaptureSavingAs])
+   
+% Append 'DNC' to the knee pain trial list
+% h.acquisitionFig.kneePain_cell = [h.acquisitionFig.kneePain_cell;{h.acquisitionFig.saveTrial, 'DNC'}];
+% writecell(h.acquisitionFig.kneePain_cell,h.acquisitionFig.kneePain_csvFullFile)
+
+% store this value before updating counters to write to csv
+% h.acquisitionFig.saveTrial = h.acquisitionFig.thisCaptureSavingAs;
+
+oldCsv = readcell(h.acquisitionFig.kneePain_csvFullFile);
+if strcmp(oldCsv{end,1},h.acquisitionFig.saveTrial) == 1     % check if user wants to overwtrite last entered knee pain score
+    oldCsv{end,2} = 'DNC';  % if so, update the value
+    writecell(oldCsv, h.acquisitionFig.kneePain_csvFullFile) % write to csv
+else % if it's a new trial, append to new row
+    h.acquisitionFig.kneePain_cell = [h.acquisitionFig.kneePain_cell;{h.acquisitionFig.saveTrial, 'DNC'}];
+    writecell(h.acquisitionFig.kneePain_cell,h.acquisitionFig.kneePain_csvFullFile)
+    
+    % update trial counters only if new trial
+    add_trial_num_to = max(cell2mat(h.acquisitionFig.trialCellArray_completed(:,5)));
+    h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4} = h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4} + 1;
+    h.acquisitionFig.thisCaptureNumber = num2str(h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4}, '%02.f');
+    h.acquisitionFig.thisCaptureSavingAs = [h.acquisitionFig.trialCellArray_completed{add_trial_num_to,2},'_',h.acquisitionFig.thisCaptureNumber]; % generate the Saving As string
+    set(h.acquisitionFig.trialNumber_dynamicText, 'String', h.acquisitionFig.thisCaptureNumber);
+    set(h.acquisitionFig.savingAs_dynamicText, 'String', h.acquisitionFig.thisCaptureSavingAs);
+end
+
+
+guidata(kneePain_DNC_pushbutton_object, h.acquisitionFig) % update handles
 end
 
 %% Height and mass Callbacks

@@ -17,6 +17,9 @@
 %   - 29/01/20: - static capture only 50 frames
 %   - 21/10/20: - updated trial list
 %   - 22/10/20: - add in extra warnings for zeroing FPs after step test
+%   - 24/11/20: - add DNC option for tests not captured
+%               - add highlight for this capture string
+%               - added diary for command window logging
 %               
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
@@ -83,6 +86,8 @@ while anotherCapture
             disp('Capturing another session.')
             disp('----------')
             
+            diary off
+            
         case 2 % finish session and run analysis
             anotherCapture = false;
             
@@ -90,6 +95,7 @@ while anotherCapture
             anotherCapture = false;
             disp('Session finished.')
             disp('----------')
+            diary off
             
         otherwise
             disp('neither')
