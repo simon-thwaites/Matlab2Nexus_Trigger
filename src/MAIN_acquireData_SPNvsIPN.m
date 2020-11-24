@@ -52,6 +52,22 @@ elseif strcmp(machine_ip, '10.90.14.67')
     cd('C:\Thwaites PhD\Matlab2Nexus_Trigger-Knee-Pain\src\')
 end
 
+% switch machine_ip
+%     
+%     case '10.90.20.114'     % work desktop machine
+%         cd('C:\Users\a1194788\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\')
+%         
+%     case '10.90.14.67'      % gait lab machine
+%         cd('C:\Thwaites PhD\Matlab2Nexus_Trigger-Knee-Pain\src\')
+%         
+%     case '192.168.43.123'   % laptop on phone hotspot
+%         cd('C:\Users\simon\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\')
+%         
+%     case '129.127.137.153'  % laptop on UoA wireless
+%         cd('C:\Users\simon\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\')
+%         
+% end
+
 nexusPacketID = 0; % initialise for incrementing UDP packets (required for Nexus)
 anotherCapture = true; 
 
