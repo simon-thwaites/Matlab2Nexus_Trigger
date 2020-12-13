@@ -9,6 +9,7 @@ function [sessionString, affectedSide] = participant_info_GUI()
 %   - 20/11/19: fixed popups, callback resets, display sessoin string,
 %   acquire data pushbutton.
 %   - 21/11/19: fixed ID input check. All working. 
+%   - changes to have timepoint month3 and CL_ and HE_ for cohort group
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
@@ -66,8 +67,8 @@ affectedSide_radio_pos = [5, 10, 75, 20;...
 
 %% initialise popup state value and string
 h.inputFig.popupValue = 1;
-h.inputFig.popupString_clinical = {'<Select time point>', '3months',...
-                                   '6months', '12months', '18months'};                          
+h.inputFig.popupString_clinical = {'<Select time point>', 'month3',...
+                                   'month6', 'month12', 'month18'};                          
 
 %% define UI controls
 h.inputFig.IDtext = uicontrol('Parent',    inputFig, ...
@@ -212,7 +213,7 @@ if h.inputFig.cohort_radio(2).Value == 1 % clinical
     set(h.inputFig.timePoint_popup,'visible','on', ...
         'Value',1,'string',h.inputFig.popupString_clinical);
     set(h.inputFig.IDtextInput,'visible','off','string',h.inputFig.IDtextInputString);
-    h.inputFig.sessionString.cohort = 'CL';
+    h.inputFig.sessionString.cohort = 'CL_';
 elseif h.inputFig.cohort_radio(2).Value == 0 && h.inputFig.cohort_radio(1).Value == 0
     set(h.inputFig.IDtextInput,'visible','off','string',h.inputFig.IDtextInputString);
     set(h.inputFig.nailRemoved_radio(1),'visible', 'off','value',1);
@@ -225,7 +226,7 @@ else % healthy
     set(h.inputFig.timePoint_popup,'visible','off','Value',0);
     set(h.inputFig.IDtextInput,'visible','on','string',h.inputFig.IDtextInputString);
     set(h.inputFig.sessionString_Display,'visible','off');
-    h.inputFig.sessionString.cohort = 'HE';
+    h.inputFig.sessionString.cohort = 'HE_';
     h.inputFig.sessionString.timePoint = '';
     h.inputFig.sessionString.nail = '';
 end
@@ -272,7 +273,7 @@ if h.inputFig.popupValue == 1
     h.inputFig.sessionString.timePoint = '';
 else
     set(h.inputFig.IDtextInput,'visible','on');
-    h.inputFig.sessionString.timePoint = ['_',char(h.inputFig.popupString(h.inputFig.popupValue,:))]; % store selection
+    h.inputFig.sessionString.timePoint = ['_', char(h.inputFig.popupString(h.inputFig.popupValue,:))]; % store selection
 end
 guidata(popup_object,h.inputFig)
 end

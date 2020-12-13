@@ -23,16 +23,16 @@ nexusEnf.session =  { '[Node Information]' ; ...
                       'CREATIONDATEANDTIME='};
                   
 % get info from session string
-cohortString  =  sessionString(1:2);
-idString = sessionString(3:5);
-cohortIDstring = sessionString(1:5);                  
+cohortString  =  sessionString(1:3);
+idString = sessionString(4:6);
+cohortIDstring = sessionString(1:6);                  
 
 cd(pathList.viconNexus_dir)
-cohortStringCheck = strcmp(cohortString,'HE');
+cohortStringCheck = strcmp(cohortString,'HE_');
 if cohortStringCheck == 1 
     cohort = 'Healthy';
 else
-    cohortStringCheck = strcmp(cohortString,'CL');
+    cohortStringCheck = strcmp(cohortString,'CL_');
     if cohortStringCheck == 1
         cohort = 'Clinical';
     end
@@ -97,7 +97,7 @@ end
 % if healthy, only one session (New Session)
 % if clinical take rest of string as session name
 
-nexusSessionString = sessionString(7:end);
+nexusSessionString = sessionString(8:end);
 if isempty(nexusSessionString)
     nexusSessionString = 'New Session';
 end
