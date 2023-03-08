@@ -1,4 +1,4 @@
-function matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list)
+function [endCaptureState, nexusPacketID_return] = matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list, nexusPacketID, affectedSide)
 % main acquisition interface for data capture
 %-------------------------------------------------------------------------%
 % Vicon Nexus:
@@ -20,10 +20,19 @@ function matlab2nexus_acquisitionInterface(sessionString, pathList, trial_list)
 %                      - trial counters working
 %          06/12/2019: - comments saving
 %                      - UDP sending working
+%          17/12/2019: - knee pain radio buttons. writing this to csv
+%          18/12/2019: - overwriting csv knee pain score of same trial
+%          19/12/2019: - height and mass entries 
+%          20/12/2019: - add end capture panels
+%                      - NexuspacketID incrementing for multiple capture
+%                      sessions [tested]
+%          29/01/2020: - static capture only 50 frames [tested]
 % ----------------------------------------------------------------------- %
 % Simnon Thwaites
 % simonthwaites1991@gmail.com
 % ----------------------------------------------------------------------- %
+endCaptureState = [];
+nexusPacketID_return = nexusPacketID;
 
 %% Create main figure
 figTag = 'acq_figTag';
@@ -38,10 +47,18 @@ acquisitionFig = figure('numbertitle',      'off', ...
                 'outerposition',    [0.2 0.2 0.6 0.6],...
                 'HandleVisibility', 'callback'); % hide the handle to prevent unintended modifications
 h.acquisitionFig = guihandles(acquisitionFig); % create handles attached to acquisitionFig
+h.acquisitionFig.stepTest_zeroWarning = 0;
+h.acquisitionFig.staticMarker_warning = 0;
+h.acquisitionFig.fsr_warning = 0;
+h.acquisitionFig.kneePad_warning = 0;
+h.acquisitionFig.EMG_warning = 0;
 
 %% define GUI object positions (x-pos,y-pos, x-width, y-height)
-% staticText_backgroundColour = [0.85 0.85 0.85];
-staticText_backgroundColour = [0.94 0.94 0.94];
+% h.acquisitionFig.staticText_backgroundColour = [0.85 0.85 0.85];
+h.acquisitionFig.staticText_backgroundColour = [0.94 0.94 0.94];
+h.acquisitionFig.highlight_button_colour = [0.9290, 0.6940, 0.1250];
+% h.acquisitionFig.nowCapturing_backgroundColour = [70, 130, 180] / 255; % steel blue
+h.acquisitionFig.nowCapturing_backgroundColour = [176, 196, 222] / 255; % light steel blue
 
 % panel positions
 trial_list_panel_position = [0.63 0.16 0.35 0.82];
@@ -50,34 +67,66 @@ capture_panel_position = [0.02 0.3 0.6 0.53];
 comments_panel_position = [0.02 0.02 0.6 0.26];
 end_capture_panel_position = [0.63 0.02 0.35 0.12];
 
-% session info panlel objects
+% session info panel objects
 sessionString_textPosition = [0.01 0.6 0.98 0.3];
 pathList_textPosition = [0.01 0.05 0.98 0.3];
 
 % comment field panel objects
-comment_editField_position = [0.01 0.1 0.8 0.8];
+comment_editField_position = [0.01 0.1 0.77 0.8];
 comment_editField_staticText_position = [0.01 0.91 0.4 0.1];
-comment_updateButton_position = [0.82 0.1 0.17 0.8];
+comment_updateButton_position = [0.79 0.1 0.2 0.8];
 
 % capture panel objects
 nowCapturing_staticText_position = [0.01 0.91 0.2 0.07];
 trialNumber_staticText_position = [0.01 0.83 0.2 0.07];
 savingAs_staticText_position = [0.01 0.75 0.2 0.07];
-nowCapturing_dynamicText_position = [0.21 0.91 0.5 0.07];
-trialNumber_dynamicText_position = [0.21 0.83 0.5 0.07];
-savingAs_dynamicText_position = [0.21 0.75 0.5 0.07];
-nextTrial_staticText_position = [0.79 0.3 0.2 0.08];
-previousTrial_staticText_position = [0.01 0.3 0.2 0.08];
+nowCapturing_dynamicText_position = [0.15 0.91 0.35 0.07];
+trialNumber_dynamicText_position = [0.15 0.83 0.35 0.07];
+savingAs_dynamicText_position = [0.15 0.75 0.35 0.07];
+nextTrial_staticText_position = [0.79 0.35 0.2 0.08];
+previousTrial_staticText_position = [0.01 0.35 0.2 0.08];
 
-nextTrial_button_position = [0.79 0.4 0.2 0.2];
-previousTrial_button_position = [0.01 0.4 0.2 0.2];
-start_button_position = [0.525 0.35 0.215 0.3];
-stop_button_position = [0.26 0.35 0.215 0.3];
+nextTrial_button_position = [0.79 0.45 0.2 0.2];
+previousTrial_button_position = [0.01 0.45 0.2 0.2];
+start_button_position = [0.525 0.4 0.215 0.3];
+stop_button_position = [0.26 0.4 0.215 0.3];
 
-start_colour = [0 .8 0];
-stop_colour = [.8 0 0];
-leftright_colour = [0.4 0.4 0.4];
+h.acquisitionFig.start_colour = [0 .8 0];
+h.acquisitionFig.stop_colour = [.8 0 0];
+h.acquisitionFig.leftright_colour = [0.4 0.4 0.4];
 buttonFont = 16;
+
+% Knee pain objects
+radio_height = 0.2;
+radio_length = 0.15;
+offset = 0.01;
+radio_yPos = 0.15;
+kneePain_Bgroup_position = [0 0 1 0.275]; % relative to capture panel
+kneePain_radio_position = ...
+    [offset radio_yPos radio_length radio_height; ...
+    offset*2+radio_length radio_yPos radio_length radio_height; ...
+    offset*3+radio_length*2 radio_yPos radio_length radio_height; ...
+    offset*4+radio_length*3 radio_yPos radio_length radio_height; ...
+    offset*5+radio_length*4 radio_yPos radio_length radio_height];
+kneePain_staticText_position = ...
+    [offset radio_yPos+offset+0.05 0.14 0.1];
+kneePainInfo_staticText_position = ...
+    [offset radio_yPos+offset 0.5 0.05];
+kneePain_storeSelection_button_position = ...
+    [offset*4+radio_length*5 offset 0.2 0.1225];
+%     [offset*4+radio_length*5 0.04 0.2 0.2]
+kneePain_DNC_button_position = ...
+    [offset*4+radio_length*5 offset*2+0.1225 0.2 0.1225];
+
+    
+
+% participant info (mass/height) objects
+participantInfo_panel_position = [0.525 0.75 0.475 0.27];
+participantInfo_heightField_position = [0.27 0.55 0.28 0.35];
+participantInfo_massField_position = [0.27 0.1 0.28 0.35];
+participantInfo_pushbutton_position = [0.56 0.1 0.425 0.8];
+participantInfo_height_staticText_position = [0.01 0.52 0.25 0.3];
+participantInfo_mass_staticText_position = [0.01 0.08 0.25 0.3];
 
 % trial list panel objects
 trial_list_text_position = [0.01 0.01 0.8 0.98];
@@ -85,6 +134,16 @@ trial_list_text_position = [0.01 0.01 0.8 0.98];
 % add the pathlists and session string to the handle
 h.acquisitionFig.pathList = pathList;
 h.acquisitionFig.sessionString = sessionString;
+h.acquisitionFig.affectedSIde = affectedSide;
+
+% end capture objects
+xOffset = 0.01; yOffset = 0.05; width = 0.3; height = 0.9; gap = 0.04;
+newSession_pushbutton_position= ...
+    [xOffset yOffset width height];
+analysis_pushbutton_position = ...
+    [xOffset+width+gap yOffset width height];
+endSession_pushbutton_position = ...
+    [xOffset+2*width+2*gap yOffset width height];
 
 
 %% Initialise UI values
@@ -110,10 +169,46 @@ h.acquisitionFig.trialCellArray_completed = cell(size(h.acquisitionFig.trialCell
     size(h.acquisitionFig.trialCellArray,2));
 h.acquisitionFig.trialCellArray_completed_counter = 0;
 
+% starting value for knee pain selection
+h.acquisitionFig.kneePain_currentValue = 'None';
+
+% write all the csv and txt files to a new directory for easier viewing
+h.acquisitionFig.pathList.acquisitionInfo_dir = ...
+        [ h.acquisitionFig.pathList.session_dir , '\Acquisition-Info' ]; % create directory path string
+if ~isfolder(h.acquisitionFig.pathList.acquisitionInfo_dir) % check exists, if not create directory
+    mkdir(h.acquisitionFig.pathList.acquisitionInfo_dir)
+end
+
+cd(h.acquisitionFig.pathList.acquisitionInfo_dir)
+diary CommandWindowLog
+cd(h.acquisitionFig.pathList.src_dir)
+
+% initialise knee pain csv
+% h.acquisitionFig.kneePain_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\Knee-Pain.csv'];
+h.acquisitionFig.kneePain_csvFullFile = [h.acquisitionFig.pathList.acquisitionInfo_dir,'\Knee-Pain.csv'];
+h.acquisitionFig.kneePain_cell = {'ParticipantSession',sessionString;'TrialName','KneePain'};
+writecell(h.acquisitionFig.kneePain_cell,h.acquisitionFig.kneePain_csvFullFile)
+
+% participant info full file
+% h.acquisitionFig.participantInfo_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\Participant-Info.csv'];
+h.acquisitionFig.participantInfo_csvFullFile = [h.acquisitionFig.pathList.acquisitionInfo_dir,'\Participant-Info.csv'];
+h.acquisitionFig.participantInfo_heightValue_valid = 0;
+h.acquisitionFig.participantInfo_massValue_valid = 0;
+h.acquisitionFig.participantInfo_cell = ...
+    {'ParticipantSession', h.acquisitionFig.sessionString;...
+    'AffectedSide', h.acquisitionFig.affectedSIde};
+writecell(h.acquisitionFig.participantInfo_cell,h.acquisitionFig.participantInfo_csvFullFile)
+
+% initialise microFET2 dynamometer csv file
+% h.acquisitionFig.microFET2_csvFullFile = [h.acquisitionFig.pathList.session_dir,'\microFET2.csv'];
+h.acquisitionFig.microFET2_csvFullFile = [h.acquisitionFig.pathList.acquisitionInfo_dir,'\microFET2.csv'];
+h.acquisitionFig.microFET2_cell = {'ParticipantSession',sessionString,'<missing>','<missing>';'TrialName','PeakForce_lbs','Duration','PeakForce_N'};
+writecell(h.acquisitionFig.microFET2_cell,h.acquisitionFig.microFET2_csvFullFile)
+
 %% initialise UDP object
 h.acquisitionFig.IPaddress = '255.255.255.255';     % broadcast over everything
 h.acquisitionFig.Port = 6610;                       % needs to also be set as 6610 in Vicon Nexus
-h.acquisitionFig.nexusPacketID = 0;                 % for incrementing UDP packets (required for Nexus)
+h.acquisitionFig.nexusPacketID = nexusPacketID;                 % for incrementing UDP packets (required for Nexus)
 h.acquisitionFig.nexusUDP = dsp.UDPSender('RemoteIPAddress',   h.acquisitionFig.IPaddress,...
     'RemoteIPPort',      h.acquisitionFig.Port,...
     'LocalIPPortSource', 'Property',...
@@ -138,9 +233,13 @@ h.acquisitionFig.comments_panel = uipanel(acquisitionFig, ...
     'FontSize',     14, ...
     'Position',     comments_panel_position);
 h.acquisitionFig.end_capture_panel = uipanel(acquisitionFig, ...
-    'Title',        'End Capture Session', ...
+    'Title',        'End Capture', ...
     'FontSize',     14, ...
     'Position',     end_capture_panel_position);
+h.acquisitionFig.participantInfo_panel = uipanel('parent', h.acquisitionFig.capture_panel, ...
+    'Title',        'Participant Information', ...
+    'FontSize',     14, ...
+    'Position',     participantInfo_panel_position);
 
 
 %% Define UI controls
@@ -150,7 +249,7 @@ h.acquisitionFig.sessionString_Text = uicontrol('Parent',    h.acquisitionFig.se
     'Style',                'text',...
     'Units',                'normalized', ...
     'String',               ['Session String:   ', sessionString],...
-    'BackgroundColor',      staticText_backgroundColour, ...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
     'Position',             sessionString_textPosition, ...
     'HorizontalAlignment',  'left');
                 
@@ -158,16 +257,16 @@ h.acquisitionFig.pathList_text = uicontrol('Parent',    h.acquisitionFig.session
     'Style',                'text',...
     'Units',                'normalized', ...
     'String',               ['File Path:   ', pathList.session_dir],...
-    'BackgroundColor',      staticText_backgroundColour, ...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
     'Position',             pathList_textPosition, ...
     'HorizontalAlignment',  'left');
                 
-% comment panel objects
+%% comment panel objects
 h.acquisitionFig.comment_editField = uicontrol('Parent', h.acquisitionFig.comments_panel, ...
     'Style',                'edit', ...
     'Units',                'normalized', ...
     'Position',             comment_editField_position, ...
-    'String',               '<WARNING: Remember to commit each comment change with the push button to the right>',...
+    'String',               '<WARNING: Remember to commit each comment change with the pushbutton to the right>',...
     'Callback',             @comment_CallBack,...
     'Min',                  1,...
     'Max',                  3); % If Max-Min>1, then multiple lines are allowed
@@ -185,20 +284,23 @@ h.acquisitionFig.comment_updateButton = uicontrol('Parent', h.acquisitionFig.com
     'Position',             comment_updateButton_position, ...
     'Callback',             @comment_updateButton_CallBack);
                 
-% trial list panel objects
+%% trial list panel objects
 h.acquisitionFig.trial_list_text = uicontrol('Parent', h.acquisitionFig.trial_list_panel, ...
     'Style',                'listbox', ...
     'Units',                'normalized', ...
     'FontSize',             12, ...
     'Position',             trial_list_text_position, ...
-    'String',               h.acquisitionFig.trialCellArray(:,1));
+    'String',               h.acquisitionFig.trialCellArray(:,1), ...
+    'Min',                  0, ... 
+    'Max',                  2, ...
+    'Value',                []);
 
-% capture panel objects
+%% capture panel objects
 h.acquisitionFig.nowCapturing_staticText = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
     'Style',                'text',...
     'Units',                'normalized', ...
     'String',               'Now capturing:   ',...
-    'BackgroundColor',      staticText_backgroundColour, ...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
     'Position',             nowCapturing_staticText_position, ...
     'HorizontalAlignment',  'left', ...
     'FontSize',             10);
@@ -206,15 +308,16 @@ h.acquisitionFig.nowCapturing_dynamicText = uicontrol('Parent',    h.acquisition
     'Style',                'text',...
     'Units',                'normalized', ...
     'String',               h.acquisitionFig.thisCaptureString,...
-    'BackgroundColor',      staticText_backgroundColour, ...
+    'BackgroundColor',      h.acquisitionFig.nowCapturing_backgroundColour, ...
     'Position',             nowCapturing_dynamicText_position, ...
     'HorizontalAlignment',  'left', ...
-    'FontSize',             10);
+    'FontSize',             10, ...
+    'FontWeight',           'bold');
 h.acquisitionFig.trialNumber_staticText = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
     'Style',                'text',...
     'Units',                'normalized', ...
     'String',               'Trial Number:   ',...
-    'BackgroundColor',      staticText_backgroundColour, ...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
     'Position',             trialNumber_staticText_position, ...
     'HorizontalAlignment',  'left', ...
     'FontSize',             10);
@@ -222,7 +325,7 @@ h.acquisitionFig.trialNumber_dynamicText = uicontrol('Parent',    h.acquisitionF
     'Style',                'text',...
     'Units',                'normalized', ...
     'String',               h.acquisitionFig.thisCaptureNumber,...
-    'BackgroundColor',      staticText_backgroundColour, ...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
     'Position',             trialNumber_dynamicText_position, ...
     'HorizontalAlignment',  'left', ...
     'FontSize',             10);
@@ -230,7 +333,7 @@ h.acquisitionFig.savingAs_staticText = uicontrol('Parent',    h.acquisitionFig.c
     'Style',                'text',...
     'Units',                'normalized', ...
     'String',               'Saving As:   ',...
-    'BackgroundColor',      staticText_backgroundColour, ...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
     'Position',             savingAs_staticText_position, ...
     'HorizontalAlignment',  'left', ...
     'FontSize',             10);
@@ -238,7 +341,7 @@ h.acquisitionFig.savingAs_dynamicText = uicontrol('Parent',    h.acquisitionFig.
     'Style',                'text',...
     'Units',                'normalized', ...
     'String',               h.acquisitionFig.thisCaptureSavingAs,...
-    'BackgroundColor',      staticText_backgroundColour, ...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
     'Position',             savingAs_dynamicText_position, ...
     'HorizontalAlignment',  'left', ...
     'FontSize',             10);
@@ -246,20 +349,20 @@ h.acquisitionFig.nextTrial_staticText = uicontrol('Parent',    h.acquisitionFig.
     'Style',                'text',...
     'Units',                'normalized', ...
     'String',               'Next Trial',...
-    'BackgroundColor',      staticText_backgroundColour, ...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
     'Position',             nextTrial_staticText_position, ...
     'FontSize',             8);
 h.acquisitionFig.previousTrial_staticText = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
     'Style',                'text',...
     'Units',                'normalized', ...
     'String',               'Previous Trial',...
-    'BackgroundColor',      staticText_backgroundColour, ...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
     'Position',             previousTrial_staticText_position, ...
     'FontSize',             8);    
 h.acquisitionFig.nextTrial_button = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
     'unit',                 'normalized',...
     'style',                'pushbutton',...
-    'BackgroundColor',      leftright_colour,...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour,...
     'string',               '>>>',...
     'FontSize',             buttonFont, ...
     'position',             nextTrial_button_position,...
@@ -268,7 +371,7 @@ h.acquisitionFig.nextTrial_button = uicontrol('Parent',    h.acquisitionFig.capt
 h.acquisitionFig.previousTrial_button = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
     'unit',                 'normalized',...
     'style',                'pushbutton',...
-    'BackgroundColor',      leftright_colour,...
+    'BackgroundColor',      h.acquisitionFig.leftright_colour,...
     'string',               '<<<',...
     'FontSize',             buttonFont, ...
     'position',             previousTrial_button_position,...
@@ -277,7 +380,7 @@ h.acquisitionFig.previousTrial_button = uicontrol('Parent',    h.acquisitionFig.
 h.acquisitionFig.start_button = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
     'unit',                 'normalized',...
     'style',                'pushbutton',...
-    'BackgroundColor',      start_colour,...
+    'BackgroundColor',      h.acquisitionFig.leftright_colour,...
     'string',               'START',...
     'FontSize',             buttonFont, ...
     'position',             start_button_position,...
@@ -286,44 +389,233 @@ h.acquisitionFig.start_button = uicontrol('Parent',    h.acquisitionFig.capture_
 h.acquisitionFig.stop_button = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
     'unit',                 'normalized',...
     'style',                'pushbutton',...
-    'BackgroundColor',      stop_colour,...
+    'BackgroundColor',      h.acquisitionFig.leftright_colour,...
     'string',               'STOP',...
     'FontSize',             buttonFont, ...
     'position',             stop_button_position,...
     'enable',               'off', ...
     'callback',             @stop_button_CallBack);
- 
+
+%% The knee pain section
+h.acquisitionFig.kneePain_buttongroup = uibuttongroup('Parent',    h.acquisitionFig.capture_panel, ...
+    'Visible',              'off',...
+    'unit',                 'normalized',...
+    'position',             kneePain_Bgroup_position, ...
+    'SelectionChangedFcn',  @kneePain_radio_CallBack);
+h.acquisitionFig.kneePain_radio(1) = uicontrol('Parent',    h.acquisitionFig.kneePain_buttongroup, ...
+    'unit',                 'normalized',...
+    'style',                'radiobutton',...
+    'position',             kneePain_radio_position(1,:), ...
+    'string',               'None', ...
+    'value',                 1,...
+    'enable',               'off');
+h.acquisitionFig.kneePain_radio(2) = uicontrol('Parent',    h.acquisitionFig.kneePain_buttongroup, ...
+    'unit',                 'normalized',...
+    'style',                'radiobutton',...
+    'position',             kneePain_radio_position(2,:), ...
+    'string',               'Mild', ...
+    'value',                 0,...
+    'enable',               'off');
+h.acquisitionFig.kneePain_radio(3) = uicontrol('Parent',    h.acquisitionFig.kneePain_buttongroup, ...
+    'unit',                 'normalized',...
+    'style',                'radiobutton',...
+    'position',             kneePain_radio_position(3,:), ...
+    'string',               'Moderate', ...
+    'value',                 0,...
+    'enable',               'off');
+h.acquisitionFig.kneePain_radio(4) = uicontrol('Parent',    h.acquisitionFig.kneePain_buttongroup, ...
+    'unit',                 'normalized',...
+    'style',                'radiobutton',...
+    'position',             kneePain_radio_position(4,:), ...
+    'string',               'Severe', ...
+    'value',                 0,...
+    'enable',               'off');
+h.acquisitionFig.kneePain_radio(5) = uicontrol('Parent',    h.acquisitionFig.kneePain_buttongroup, ...
+    'unit',                 'normalized',...
+    'style',                'radiobutton',...
+    'position',             kneePain_radio_position(5,:), ...
+    'string',               'Extreme', ...
+    'value',                 0,...
+    'enable',               'off');    
+h.acquisitionFig.kneePain_buttongroup.Visible = 'on'; % turn visibility on now buttons are made.
+h.acquisitionFig.kneePain_staticText = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
+    'Style',                'text',...
+    'Units',                'normalized', ...
+    'String',               'Knee Pain',...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
+    'Position',             kneePain_staticText_position, ...
+    'FontSize',             14, ...
+    'HorizontalAlignment',  'left');
+h.acquisitionFig.kneePainInfo_staticText = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
+    'Style',                'text',...
+    'Units',                'normalized', ...
+    'String',               'After each trial, enter knee pain level with pushbutton to the right',...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
+    'Position',             kneePainInfo_staticText_position, ...
+    'FontSize',             8, ...
+    'HorizontalAlignment',  'left');
+h.acquisitionFig.kneePain_storeSelection_button = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
+    'Style',                'pushbutton',...
+    'Units',                'normalized', ...
+    'String',               'Enter Knee Pain Value',...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
+    'Position',             kneePain_storeSelection_button_position, ...
+    'FontSize',             8, ...
+    'callback',             @kneePain_storeSelection_CallBack,...
+    'enable',               'off');
+h.acquisitionFig.kneePain_DNC_button = uicontrol('Parent',    h.acquisitionFig.capture_panel, ...
+    'Style',                'pushbutton',...
+    'Units',                'normalized', ...
+    'String',               'Did Not Complete',...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
+    'Position',             kneePain_DNC_button_position, ...
+    'FontSize',             8, ...
+    'callback',             @kneePain_DNC_CallBack,...
+    'enable',               'off');
+
+%% participant Info section
+h.acquisitionFig.participantInfo_heightField = uicontrol('Parent', h.acquisitionFig.participantInfo_panel, ...
+    'Style',                'edit', ...
+    'Units',                'normalized', ...
+    'Position',             participantInfo_heightField_position, ...
+    'String',               '<Press Enter>',...
+    'Callback',             @height_CallBack);
+h.acquisitionFig.participantInfo_massField = uicontrol('Parent', h.acquisitionFig.participantInfo_panel, ...
+    'Style',                'edit', ...
+    'Units',                'normalized', ...
+    'Position',             participantInfo_massField_position, ...
+    'String',               '<Press Enter>',...
+    'Callback',             @mass_CallBack);
+h.acquisitionFig.participantInfo_pushbutton = uicontrol('Parent', h.acquisitionFig.participantInfo_panel, ...
+    'Style',                'pushbutton', ...
+    'Units',                'normalized', ...
+    'Enable',               'off', ...
+    'String',               'Save Values', ...
+    'Position',             participantInfo_pushbutton_position, ...
+    'Callback',             @participantInfo_pushbutton_CallBack);
+h.acquisitionFig.participantInfo_height_staticText = uicontrol('Parent',    h.acquisitionFig.participantInfo_panel, ...
+    'Style',                'text',...
+    'Units',                'normalized', ...
+    'String',               'Height (cm):',...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
+    'Position',             participantInfo_height_staticText_position, ...
+    'HorizontalAlignment',  'left', ...
+    'FontSize',             8);
+h.acquisitionFig.participantInfo_mass_staticText = uicontrol('Parent',    h.acquisitionFig.participantInfo_panel, ...
+    'Style',                'text',...
+    'Units',                'normalized', ...
+    'String',               'Mass (kg):',...
+    'BackgroundColor',      h.acquisitionFig.staticText_backgroundColour, ...
+    'Position',             participantInfo_mass_staticText_position, ...
+    'HorizontalAlignment',  'left', ...
+    'FontSize',             8);
+%% End capture section
+h.acquisitionFig.newSession_pushbutton = uicontrol('Parent', h.acquisitionFig.end_capture_panel, ...
+    'Style',                'pushbutton', ...
+    'Units',                'normalized', ...
+    'Enable',               'on', ...
+    'String',               'New Session', ...
+    'Position',             newSession_pushbutton_position, ...
+    'Callback',             @newSession_pushbutton_CallBack);
+h.acquisitionFig.analysis_pushbutton = uicontrol('Parent', h.acquisitionFig.end_capture_panel, ...
+    'Style',                'pushbutton', ...
+    'Units',                'normalized', ...
+    'Enable',               'off', ...
+    'String',               'Run Analysis', ...
+    'Position',             analysis_pushbutton_position, ...
+    'Callback',             @analysis_pushbutton_CallBack);
+h.acquisitionFig.endSession_pushbutton = uicontrol('Parent', h.acquisitionFig.end_capture_panel, ...
+    'Style',                'pushbutton', ...
+    'Units',                'normalized', ...
+    'Enable',               'on', ...
+    'String',               'End Session', ...
+    'Position',             endSession_pushbutton_position, ...
+    'Callback',             @endSession_pushbutton_CallBack);
+
+
 guidata(acquisitionFig,h.acquisitionFig);
 
+% ----------------------------------------------------------------------- %
+% ======================================================================= %
+%% End capture Callbacks
+% ======================================================================= %
+    function newSession_pushbutton_CallBack(button_object,~,~)
+        endCaptureState = 1;
+        nexusPacketID_return = getappdata(h.acquisitionFig.acq_figTag, 'return_nexusPacketID');%h.acquisitionFig.nexusPacketID;
+        % h.acquisitionFig = guidata(button_object);
+        % guidata(button_object, h.acquisitionFig) % update handles
+        % setappdata(h.acquisitionFig.acq_figTag,'return_nexusPacketID',h.acquisitionFig.nexusPacketID)
+        % getappdata(h.acquisitionFig.acq_figTag, 'return_nexusPacketID')
+        % value = 9;
+        % h.acquisitionFig.acq_figTag.return_nexusPacketID
+        % guidata(button_object, h.acquisitionFig) % update handles
+        % can do like this but best not to ...
+        % evalin('base', 'return_nexusPacketID', num2str(h.acquisitionFig.nexusPacketID));
+        
+        % h.return_nexusPacketID = h.acquisitionFig.nexusPacketID;
+        % disp(h.return_nexusPacketID)
+%         closereq();
+        delete(acquisitionFig);
+    end
+%%
+    function analysis_pushbutton_CallBack(button_object,~,~)
+        % h.acquisitionFig = guidata(button_object);
+        % guidata(button_object, h.acquisitionFig) % update handles
+    end
+%%
+    function endSession_pushbutton_CallBack(button_object,~,~)
+        % h.acquisitionFig = guidata(button_object);
+        % guidata(button_object, h.acquisitionFig) % update handles
+        endCaptureState = 3;
+        delete(acquisitionFig);
+    end
+% ----------------------------------------------------------------------- %
+waitfor(acquisitionFig); 
 end
 
+
 %% CALLBACKS
+% ======================================================================= %
+
+%% Comment Callbacks
+% ======================================================================= %
 function comment_CallBack(text_object, ~, ~)
 h.acquisitionFig = guidata(text_object);
-set(h.acquisitionFig.comment_updateButton, 'Enable', 'on');
+set(h.acquisitionFig.comment_updateButton, 'Enable', 'on'); % enable button to save file
 guidata(text_object, h.acquisitionFig) % update handles
 end
-%%
+%
 function comment_updateButton_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 h.acquisitionFig.commentString = h.acquisitionFig.comment_editField.String;
 set(h.acquisitionFig.comment_updateButton, 'Enable', 'on');
 
 % save/overwrite the Comments.txt file
-fileID = fopen([h.acquisitionFig.pathList.session_dir,'\Comments.txt'],'w');
+% fileID = fopen([h.acquisitionFig.pathList.session_dir,'\Comments.txt'],'w');
+fileID = fopen([h.acquisitionFig.pathList.acquisitionInfo_dir,'\Comments.txt'],'w');
 fprintf(fileID, '~~~\r\nSessionID: \r\n%s\r\n~~~\r\n', h.acquisitionFig.sessionString);
 fprintf(fileID, 'Comments: \r\n%s\r\n~~~', h.acquisitionFig.commentString);
 fclose(fileID);
 
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-%%
+
+%% Capture Callbacks
+% ======================================================================= %
 function nextTrial_button_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 
 % need to have a counter here for the completed cell array
 h.acquisitionFig.trialCellArray_completed_counter = h.acquisitionFig.trialCellArray_completed_counter + 1;
 counter = h.acquisitionFig.trialCellArray_completed_counter;
+set(h.acquisitionFig.nextTrial_button, 'BackgroundColor', h.acquisitionFig.staticText_backgroundColour)
+
+% disable knee pain field
+set(h.acquisitionFig.kneePain_storeSelection_button, 'enable', 'off');
+set(h.acquisitionFig.kneePain_DNC_button, 'enable', 'on'); % enable DNC
+for i = 1:5
+   set(h.acquisitionFig.kneePain_radio(i), 'enable', 'off');
+end
 
 if counter < length(h.acquisitionFig.trialCellArray) + 1
     % get next capture info
@@ -334,6 +626,7 @@ if counter < length(h.acquisitionFig.trialCellArray) + 1
     set(h.acquisitionFig.nowCapturing_dynamicText, 'String', h.acquisitionFig.thisCaptureString);
     set(h.acquisitionFig.trialNumber_dynamicText, 'String', h.acquisitionFig.thisCaptureNumber);
     set(h.acquisitionFig.savingAs_dynamicText, 'String', h.acquisitionFig.thisCaptureSavingAs);
+    h.acquisitionFig.saveTrial = h.acquisitionFig.thisCaptureSavingAs;
     
     % remove the current capture from the trial list panel and add to completed
     % list
@@ -341,21 +634,33 @@ if counter < length(h.acquisitionFig.trialCellArray) + 1
     h.acquisitionFig.trialCellArray_updated(1,:) = [];  % remove the top element of the trial list
     set(h.acquisitionFig.trial_list_text, 'String', h.acquisitionFig.trialCellArray_updated(:,1)); % update trial list
     set(h.acquisitionFig.start_button, 'enable', 'on'); % enable start button
+    set(h.acquisitionFig.start_button, 'BackgroundColor', h.acquisitionFig.start_colour)
     set(h.acquisitionFig.previousTrial_button, 'enable', 'on'); % enable previous trial button
+    set(h.acquisitionFig.previousTrial_button, 'BackgroundColor',h.acquisitionFig.staticText_backgroundColour);
     
-    % once you reach end of the trial list, disable the next trial button
+    % once you reach end of the trial list, disable the next trial button,
+    % highlight previous trial button
     if counter == length(h.acquisitionFig.trialCellArray)
         set(h.acquisitionFig.nextTrial_button, 'enable', 'off');
+        set(h.acquisitionFig.nextTrial_button, 'BackgroundColor',h.acquisitionFig.leftright_colour);
+        set(h.acquisitionFig.previousTrial_button, 'BackgroundColor', h.acquisitionFig.staticText_backgroundColour)
     end
 end
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-%%
+%
 function previousTrial_button_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 
 % create counter
 counter = h.acquisitionFig.trialCellArray_completed_counter;
+set(h.acquisitionFig.previousTrial_button, 'BackgroundColor', h.acquisitionFig.staticText_backgroundColour)
+
+% disable knee pain field
+set(h.acquisitionFig.kneePain_storeSelection_button, 'enable', 'off');
+for i = 1:5
+   set(h.acquisitionFig.kneePain_radio(i), 'enable', 'off');
+end
 
 if counter ~= 0
     % the row to shift should be one with largest value in 5 collumn
@@ -363,6 +668,7 @@ if counter ~= 0
     
     if counter < length(h.acquisitionFig.trialCellArray)+1
         set(h.acquisitionFig.nextTrial_button, 'enable', 'on');
+        set(h.acquisitionFig.nextTrial_button, 'BackgroundColor', h.acquisitionFig.staticText_backgroundColour);
     end
     
     % update the trial list
@@ -374,11 +680,16 @@ if counter ~= 0
     counter = counter - 1;
     h.acquisitionFig.trialCellArray_completed_counter = counter;
     
-    % once get back to zero, disable previous button
+    % once get back to zero, disable previous button, highlight next trial
+    % button
     if counter == 0
+        set(h.acquisitionFig.kneePain_DNC_button, 'enable', 'off');
         set(h.acquisitionFig.previousTrial_button, 'enable', 'off');
+        set(h.acquisitionFig.previousTrial_button, 'BackgroundColor', h.acquisitionFig.leftright_colour)
         set(h.acquisitionFig.start_button, 'enable', 'off');
+        set(h.acquisitionFig.start_button, 'BackgroundColor', h.acquisitionFig.leftright_colour)
         set(h.acquisitionFig.nextTrial_button, 'enable', 'on');
+        set(h.acquisitionFig.nextTrial_button, 'BackgroundColor', h.acquisitionFig.staticText_backgroundColour)
         % update the fields back to starting values
         set(h.acquisitionFig.nowCapturing_dynamicText, 'String', '<Hit Next Trial button>');
         set(h.acquisitionFig.trialNumber_dynamicText, 'String', '00');
@@ -392,24 +703,100 @@ if counter ~= 0
         set(h.acquisitionFig.nowCapturing_dynamicText, 'String', h.acquisitionFig.thisCaptureString);
         set(h.acquisitionFig.trialNumber_dynamicText, 'String', h.acquisitionFig.thisCaptureNumber);
         set(h.acquisitionFig.savingAs_dynamicText, 'String', h.acquisitionFig.thisCaptureSavingAs);
+        h.acquisitionFig.saveTrial = h.acquisitionFig.thisCaptureSavingAs;
     end
 else
-    % if back to start of trial list, disble previous button
+    % if back to start of trial list, disable previous button, highlight
+    % next trial button
     set(h.acquisitionFig.previousTrial_button, 'enable', 'off');
+    set(h.acquisitionFig.previousTrial_button, 'BackgroundColor', h.acquisitionFig.leftright_colour)
+    set(h.acquisitionFig.nextTrial_button, 'BackgroundColor', h.acquisitionFig.staticText_backgroundColour)
 end
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-%%
+%
 function start_button_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
+
+% check for if calib test, if so, warning for marker placement
+if strcmp(h.acquisitionFig.thisCaptureString, "Calibration - Static") && h.acquisitionFig.staticMarker_warning == 0
+    h.acquisitionFig.staticMarker_warning = 1;
+    w1 = warndlg('ALL MARKERS IN PLACE?','Marker Check!');
+    uiwait(w1)
+    disp('Max isometric tests complete. All markers in place for  calibration trials.')
+end
+
+% check for if calib tests done, if so, warning for calib only markers
+% removed
+if ~ismember(h.acquisitionFig.thisCaptureString, ["Calibration - Static", "Calibration - Functional"]) && h.acquisitionFig.staticMarker_warning == 1
+    h.acquisitionFig.staticMarker_warning = 2;
+    w1 = warndlg('CALIB ONLY MARKERS REMOVED? (med & lat knee & dorsal foot markers)','Marker Check!');
+    uiwait(w1)
+    disp('Calibration trials complete. Calibration only markers removed.')
+end
+
+% check for if step test, if so, warning to zero FPs
+if strcmp(h.acquisitionFig.thisCaptureString, "Step Test") && h.acquisitionFig.stepTest_zeroWarning == 0
+    h.acquisitionFig.stepTest_zeroWarning = 1;
+    w1 = warndlg('FORCE PLATFORMS ZEROED?','Step Test - Hardware Check!');
+    uiwait(w1)
+    disp('Force platforms zeroed for Step Test.')
+end
+
+% check for if step test complete, warning to zero FPs
+if ~strcmp(h.acquisitionFig.thisCaptureString, "Step Test") && h.acquisitionFig.stepTest_zeroWarning == 1
+    h.acquisitionFig.stepTest_zeroWarning = 2;
+    w1 = warndlg('FORCE PLATFORMS ZEROED?','Step Test - Hardware Check!');
+    uiwait(w1)
+    disp('Force platforms zeroed after Step Test.')
+end
+
+% check if fsr trial. contains() checks if "smallString" exists in
+% "largeString"
+if contains(h.acquisitionFig.thisCaptureString, "No pads") && h.acquisitionFig.fsr_warning == 0
+    h.acquisitionFig.fsr_warning = 1;
+    w1 = warndlg('FSRs IN PLACE?','FSR Check!');
+    uiwait(w1)
+    disp('FSRs in place.')
+    
+    w1 = warndlg('FSRs CONFIG PHOTO TAKEN?','FSR Check!');
+    uiwait(w1)
+    disp('FSR config photo taken.')
+end
+
+% check for knee pads in place
+if contains(h.acquisitionFig.thisCaptureString, "Pads") && h.acquisitionFig.kneePad_warning == 0
+    h.acquisitionFig.kneePad_warning = 1;
+    w1 = warndlg('KNEE PADS ON?','Knee Pad Check!');
+    uiwait(w1)
+    disp('Knee pads on.')
+end
+
+% checks for EMGs in place for the dyno tests
+if contains(h.acquisitionFig.thisCaptureString, "Max_iso_quad") && h.acquisitionFig.EMG_warning == 0
+    h.acquisitionFig.EMG_warning = 1;
+    w1 = warndlg('EMGs attached for Max. iso. quad. test?','EMG Check!');
+    uiwait(w1)
+    disp('EMGs attached for Max. iso. quad. test.')
+end
 
 % disble all buttons including start
 set(h.acquisitionFig.previousTrial_button, 'enable', 'off');
 set(h.acquisitionFig.start_button, 'enable', 'off');
-set(h.acquisitionFig.nextTrial_button, 'enable', 'off'); 
+set(h.acquisitionFig.start_button, 'BackgroundColor', h.acquisitionFig.leftright_colour)
+set(h.acquisitionFig.nextTrial_button, 'enable', 'off');
+set(h.acquisitionFig.kneePain_storeSelection_button, 'enable', 'off');
+set(h.acquisitionFig.kneePain_DNC_button, 'enable', 'off');
+for i = 1:5
+   set(h.acquisitionFig.kneePain_radio(i), 'enable', 'off');
+end
 
-% enable stop button
-set(h.acquisitionFig.stop_button, 'enable', 'on');
+% check for static trial type, if not, enable stop button.
+if ~strcmp(h.acquisitionFig.thisCaptureString, "Calibration - Static")
+    % enable stop button
+    set(h.acquisitionFig.stop_button, 'enable', 'on');
+    set(h.acquisitionFig.stop_button, 'BackgroundColor', h.acquisitionFig.stop_colour)
+end
 
 % Update Nexus packet counter
 h.acquisitionFig.nexusPacketID = h.acquisitionFig.nexusPacketID + 1; 
@@ -426,14 +813,72 @@ nexusStart = pad(nexusStart,500); % pad all Nexus messages to same length
 % send the start packet
 h.acquisitionFig.nexusUDP(int8(nexusStart));
 
+% check for static trial type, if so, only 50 frame capture, force stop.
+if strcmp(h.acquisitionFig.thisCaptureString, "Calibration - Static")
+    
+    % pause for desired amount
+    % 0.75 matlab pause gives 50 frame capture on nexus operating at 100Hz
+    % not sure why ...
+    pause(0.75)
+    
+    % update Nexus packet counter
+    h.acquisitionFig.nexusPacketID = h.acquisitionFig.nexusPacketID + 1;
+    % generate Nexus stop message
+    nexusStop = ['<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'...
+        '<CaptureStop RESULT="SUCCESS">'...
+        '<Name VALUE="',            h.acquisitionFig.thisCaptureSavingAs,'"/>'...
+        '<DatabasePath VALUE="',    h.acquisitionFig.pathList.session_dir,'"/>'...
+        '<Delay VALUE="0"/>'...
+        '<PacketID VALUE="',        num2str(h.acquisitionFig.nexusPacketID),'"/>'...
+        '</CaptureStop>'];
+    nexusStop = pad(nexusStop,500);
+    % nexus complete message
+    h.acquisitionFig.nexusPacketID = h.acquisitionFig.nexusPacketID + 1;
+    setappdata(h.acquisitionFig.acq_figTag,'return_nexusPacketID',h.acquisitionFig.nexusPacketID)
+    nexusComplete = ['<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'...
+        '<CaptureComplete>'...
+        '<Name VALUE="',            h.acquisitionFig.thisCaptureSavingAs,'"/>'...
+        '<DatabasePath VALUE="',    h.acquisitionFig.pathList.session_dir,'"/>'...
+        '<PacketID VALUE="',        num2str(h.acquisitionFig.nexusPacketID),'"/>'...
+        '</CaptureComplete>'];
+    nexusComplete = pad(nexusComplete,500);
+    % send the stop packets
+    h.acquisitionFig.nexusUDP(int8(nexusStop));
+    h.acquisitionFig.nexusUDP(int8(nexusComplete));
+    
+%     % disable stop button
+%     set(h.acquisitionFig.stop_button, 'enable', 'off');
+%     set(h.acquisitionFig.stop_button, 'BackgroundColor', h.acquisitionFig.leftright_colour)
+    
+    % enable knee pain buttons
+    set(h.acquisitionFig.kneePain_storeSelection_button, 'enable', 'on');
+    for i = 1:5
+        set(h.acquisitionFig.kneePain_radio(i), 'enable', 'on');
+    end
+    % set knee pain pushbutton to orange
+    set(h.acquisitionFig.kneePain_storeSelection_button, ...
+        'BackgroundColor', h.acquisitionFig.highlight_button_colour);
+    
+    % store this value before updateing counters to write to csv
+    h.acquisitionFig.saveTrial = h.acquisitionFig.thisCaptureSavingAs;
+    
+    % update trial counters
+    add_trial_num_to = max(cell2mat(h.acquisitionFig.trialCellArray_completed(:,5)));
+    h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4} = h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4} + 1;
+    h.acquisitionFig.thisCaptureNumber = num2str(h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4}, '%02.f');
+    h.acquisitionFig.thisCaptureSavingAs = [h.acquisitionFig.trialCellArray_completed{add_trial_num_to,2},'_',h.acquisitionFig.thisCaptureNumber]; % generate the Saving As string
+    set(h.acquisitionFig.trialNumber_dynamicText, 'String', h.acquisitionFig.thisCaptureNumber);
+    set(h.acquisitionFig.savingAs_dynamicText, 'String', h.acquisitionFig.thisCaptureSavingAs);
+end
+
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
-%%
+%
 function stop_button_CallBack(pushButton_object, ~, ~)
 h.acquisitionFig = guidata(pushButton_object);
 
-% counter for trial increment
-counter = h.acquisitionFig.trialCellArray_completed_counter;
+% % counter for trial increment
+% counter = h.acquisitionFig.trialCellArray_completed_counter;
 
 % update Nexus packet counter
 h.acquisitionFig.nexusPacketID = h.acquisitionFig.nexusPacketID + 1;
@@ -448,6 +893,7 @@ nexusStop = ['<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'...
 nexusStop = pad(nexusStop,500);
 % nexus complete message
 h.acquisitionFig.nexusPacketID = h.acquisitionFig.nexusPacketID + 1;
+setappdata(h.acquisitionFig.acq_figTag,'return_nexusPacketID',h.acquisitionFig.nexusPacketID)
 nexusComplete = ['<?xml version="1.0" encoding="UTF-8" standalone="no" ?>'...
     '<CaptureComplete>'...
     '<Name VALUE="',            h.acquisitionFig.thisCaptureSavingAs,'"/>'...
@@ -461,24 +907,24 @@ h.acquisitionFig.nexusUDP(int8(nexusComplete));
 
 % disable stop button
 set(h.acquisitionFig.stop_button, 'enable', 'off');
+set(h.acquisitionFig.stop_button, 'BackgroundColor', h.acquisitionFig.leftright_colour)
 
-% enable all other buttons
-if counter > 0 && counter < length(h.acquisitionFig.trialCellArray) + 1
-    set(h.acquisitionFig.nextTrial_button, 'enable', 'on');
-    set(h.acquisitionFig.start_button, 'enable', 'on');
-    set(h.acquisitionFig.previousTrial_button, 'enable', 'on');
-    if counter == length(h.acquisitionFig.trialCellArray)
-        set(h.acquisitionFig.nextTrial_button, 'enable', 'off');
-        set(h.acquisitionFig.previousTrial_button, 'enable', 'on');
-        set(h.acquisitionFig.start_button, 'enable', 'on');
-    end
+% entries if dyno tests
+if strcmp(h.acquisitionFig.thisCaptureString, "Max_iso_quad - Affected") || strcmp(h.acquisitionFig.thisCaptureString,"Max_iso_quad - Unaffected")
+    store_microFET2_values(h.acquisitionFig.microFET2_csvFullFile, h.acquisitionFig.thisCaptureSavingAs)
 end
 
-if counter == 0    
-    set(h.acquisitionFig.previousTrial_button, 'enable', 'off');
-    set(h.acquisitionFig.start_button, 'enable', 'off');
-    set(h.acquisitionFig.nextTrial_button, 'enable', 'on');
+% enable knee pain buttons
+set(h.acquisitionFig.kneePain_storeSelection_button, 'enable', 'on');
+for i = 1:5
+   set(h.acquisitionFig.kneePain_radio(i), 'enable', 'on');
 end
+% set knee pain pushbutton to orange
+set(h.acquisitionFig.kneePain_storeSelection_button, ...
+    'BackgroundColor', h.acquisitionFig.highlight_button_colour);
+
+% store this value before updating counters to write to csv
+h.acquisitionFig.saveTrial = h.acquisitionFig.thisCaptureSavingAs;
 
 % update trial counters
 add_trial_num_to = max(cell2mat(h.acquisitionFig.trialCellArray_completed(:,5)));
@@ -490,3 +936,179 @@ set(h.acquisitionFig.savingAs_dynamicText, 'String', h.acquisitionFig.thisCaptur
 
 guidata(pushButton_object, h.acquisitionFig) % update handles
 end
+
+%% Knee pain call backs
+% ======================================================================= %
+function kneePain_radio_CallBack(kneePain_radioButton_object, event, ~)
+h.acquisitionFig = guidata(kneePain_radioButton_object);
+h.acquisitionFig.kneePain_currentValue = event.NewValue.String; % store current selection
+guidata(kneePain_radioButton_object, h.acquisitionFig) % update handles
+end
+
+function kneePain_storeSelection_CallBack(kneePain_pushbutton_object, ~, ~)
+h.acquisitionFig = guidata(kneePain_pushbutton_object);
+
+% store the value to csv but first check if need to overwrite the current 
+% knee pain score
+oldCsv = readcell(h.acquisitionFig.kneePain_csvFullFile);
+if strcmp(oldCsv{end,1},h.acquisitionFig.saveTrial) == 1     % check if user wants to overwtrite last entered knee pain score
+    oldCsv{end,2} = h.acquisitionFig.kneePain_currentValue;  % if so, update the value
+    writecell(oldCsv, h.acquisitionFig.kneePain_csvFullFile) % write to csv
+else % if it's a new trial, append to new row
+    h.acquisitionFig.kneePain_cell = [h.acquisitionFig.kneePain_cell;{h.acquisitionFig.saveTrial, h.acquisitionFig.kneePain_currentValue}];
+    writecell(h.acquisitionFig.kneePain_cell,h.acquisitionFig.kneePain_csvFullFile)
+end
+
+% counter for trial increment
+counter = h.acquisitionFig.trialCellArray_completed_counter;
+set(h.acquisitionFig.kneePain_storeSelection_button, ...
+    'BackgroundColor', h.acquisitionFig.staticText_backgroundColour);
+% enable all other buttons
+if counter > 0 && counter < length(h.acquisitionFig.trialCellArray) + 1
+    set(h.acquisitionFig.nextTrial_button, 'enable', 'on');
+    set(h.acquisitionFig.start_button, 'enable', 'on');
+    set(h.acquisitionFig.start_button, 'BackgroundColor', h.acquisitionFig.start_colour)
+    set(h.acquisitionFig.previousTrial_button, 'enable', 'on');
+    set(h.acquisitionFig.kneePain_DNC_button, 'enable', 'on'); % enable DNC
+    if counter == length(h.acquisitionFig.trialCellArray) % no more trials so disable next trial.
+        set(h.acquisitionFig.nextTrial_button, 'enable', 'off');
+        set(h.acquisitionFig.previousTrial_button, 'enable', 'on');
+        set(h.acquisitionFig.start_button, 'enable', 'on');
+        set(h.acquisitionFig.start_button, 'BackgroundColor', h.acquisitionFig.start_colour)
+    end
+end
+
+% if at start of trial list, only next trial button can be pressed
+if counter == 0    
+    set(h.acquisitionFig.kneePain_DNC_button, 'enable', 'off');
+    set(h.acquisitionFig.previousTrial_button, 'enable', 'off');
+    set(h.acquisitionFig.start_button, 'enable', 'off');
+    set(h.acquisitionFig.start_button, 'BackgroundColor', h.acquisitionFig.leftright_colour)
+    set(h.acquisitionFig.nextTrial_button, 'enable', 'on');
+end
+
+guidata(kneePain_pushbutton_object, h.acquisitionFig) % update handles
+end
+
+function kneePain_DNC_CallBack(kneePain_DNC_pushbutton_object , ~, ~)
+h.acquisitionFig = guidata(kneePain_DNC_pushbutton_object);
+
+% warning to write DNC
+w1 = warndlg('Write DNC (Did Not Complete) to file?','Particpant unable to complete test');
+uiwait(w1)
+disp(['Participant unable to complete trial: ', h.acquisitionFig.thisCaptureSavingAs])
+   
+% Append 'DNC' to the knee pain trial list
+% h.acquisitionFig.kneePain_cell = [h.acquisitionFig.kneePain_cell;{h.acquisitionFig.saveTrial, 'DNC'}];
+% writecell(h.acquisitionFig.kneePain_cell,h.acquisitionFig.kneePain_csvFullFile)
+
+% store this value before updating counters to write to csv
+% h.acquisitionFig.saveTrial = h.acquisitionFig.thisCaptureSavingAs;
+
+oldCsv = readcell(h.acquisitionFig.kneePain_csvFullFile);
+if strcmp(oldCsv{end,1},h.acquisitionFig.saveTrial) == 1     % check if user wants to overwtrite last entered knee pain score
+    oldCsv{end,2} = 'DNC';  % if so, update the value
+    writecell(oldCsv, h.acquisitionFig.kneePain_csvFullFile) % write to csv
+else % if it's a new trial, append to new row
+    h.acquisitionFig.kneePain_cell = [h.acquisitionFig.kneePain_cell;{h.acquisitionFig.saveTrial, 'DNC'}];
+    writecell(h.acquisitionFig.kneePain_cell,h.acquisitionFig.kneePain_csvFullFile)
+    
+    % update trial counters only if new trial
+    add_trial_num_to = max(cell2mat(h.acquisitionFig.trialCellArray_completed(:,5)));
+    h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4} = h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4} + 1;
+    h.acquisitionFig.thisCaptureNumber = num2str(h.acquisitionFig.trialCellArray_completed{add_trial_num_to,4}, '%02.f');
+    h.acquisitionFig.thisCaptureSavingAs = [h.acquisitionFig.trialCellArray_completed{add_trial_num_to,2},'_',h.acquisitionFig.thisCaptureNumber]; % generate the Saving As string
+    set(h.acquisitionFig.trialNumber_dynamicText, 'String', h.acquisitionFig.thisCaptureNumber);
+    set(h.acquisitionFig.savingAs_dynamicText, 'String', h.acquisitionFig.thisCaptureSavingAs);
+end
+
+
+guidata(kneePain_DNC_pushbutton_object, h.acquisitionFig) % update handles
+end
+
+%% Height and mass Callbacks
+% ======================================================================= %
+function height_CallBack(height_object, ~, ~)
+h.acquisitionFig = guidata(height_object);
+h.acquisitionFig.participantInfo_heightValue = h.acquisitionFig.participantInfo_heightField.String;
+stringCheck = str2double(h.acquisitionFig.participantInfo_heightValue); % output NaN if ID contains non-numeric input
+if ~isnan(stringCheck)
+    h.acquisitionFig.participantInfo_heightValue_valid = 1;
+    if h.acquisitionFig.participantInfo_heightValue_valid == 1 && h.acquisitionFig.participantInfo_massValue_valid == 1
+        set(h.acquisitionFig.participantInfo_pushbutton,'enable','on')
+        set(h.acquisitionFig.participantInfo_pushbutton,'BackgroundColor',h.acquisitionFig.highlight_button_colour)
+    else
+        set(h.acquisitionFig.participantInfo_pushbutton,'enable','off')
+        set(h.acquisitionFig.participantInfo_pushbutton,'BackgroundColor',h.acquisitionFig.staticText_backgroundColour)
+    end
+else
+    h.acquisitionFig.participantInfo_heightValue_valid = 0;
+    set(h.acquisitionFig.participantInfo_pushbutton,'enable','off')
+    set(h.acquisitionFig.participantInfo_pushbutton,'BackgroundColor',h.acquisitionFig.staticText_backgroundColour)
+    warndlg('Height value must be numeric!','ERROR')
+end
+guidata(height_object, h.acquisitionFig) % update handles
+end
+%
+function mass_CallBack(mass_object, ~, ~)
+h.acquisitionFig = guidata(mass_object);
+h.acquisitionFig.participantInfo_massValue = h.acquisitionFig.participantInfo_massField.String;
+stringCheck = str2double(h.acquisitionFig.participantInfo_massValue); % output NaN if ID contains non-numeric input
+if ~isnan(stringCheck)
+    h.acquisitionFig.participantInfo_massValue_valid = 1;
+    if h.acquisitionFig.participantInfo_heightValue_valid == 1 && h.acquisitionFig.participantInfo_massValue_valid == 1
+        set(h.acquisitionFig.participantInfo_pushbutton,'enable','on')
+        set(h.acquisitionFig.participantInfo_pushbutton,'BackgroundColor',h.acquisitionFig.highlight_button_colour)
+    else
+        set(h.acquisitionFig.participantInfo_pushbutton,'enable','off')
+        set(h.acquisitionFig.participantInfo_pushbutton,'BackgroundColor',h.acquisitionFig.staticText_backgroundColour)
+    end
+else
+    h.acquisitionFig.participantInfo_massValue_valid = 0;
+    set(h.acquisitionFig.participantInfo_pushbutton,'enable','off')
+    set(h.acquisitionFig.participantInfo_pushbutton,'BackgroundColor',h.acquisitionFig.staticText_backgroundColour)
+    warndlg('Mass value must be numeric!','ERROR')
+end
+guidata(mass_object, h.acquisitionFig) % update handles
+end
+%
+function participantInfo_pushbutton_CallBack(button_object, ~, ~)
+h.acquisitionFig = guidata(button_object);
+set(h.acquisitionFig.participantInfo_pushbutton,'enable','off')
+set(h.acquisitionFig.participantInfo_pushbutton,'BackgroundColor',h.acquisitionFig.staticText_backgroundColour)
+oldCsv = readcell(h.acquisitionFig.participantInfo_csvFullFile);
+newCsv = [oldCsv;{'Height (cm)', h.acquisitionFig.participantInfo_heightValue;...
+    'Body mass (kg)', h.acquisitionFig.participantInfo_massValue}];
+writecell(newCsv,h.acquisitionFig.participantInfo_csvFullFile)
+
+guidata(button_object, h.acquisitionFig) % update handles
+end
+
+
+% %% End capture Callbacks
+% % ======================================================================= %
+% function newSession_pushbutton_CallBack(button_object,~,~)
+% h.acquisitionFig = guidata(button_object);
+% guidata(button_object, h.acquisitionFig) % update handles
+% % setappdata(h.acquisitionFig.acq_figTag,'return_nexusPacketID',h.acquisitionFig.nexusPacketID)
+% % getappdata(h.acquisitionFig.acq_figTag)
+% % value = 9;
+% % h.acquisitionFig.acq_figTag.return_nexusPacketID
+% % guidata(button_object, h.acquisitionFig) % update handles
+% % can do like this but best not to ...
+% % evalin('base', 'return_nexusPacketID', num2str(h.acquisitionFig.nexusPacketID));
+% 
+% % h.return_nexusPacketID = h.acquisitionFig.nexusPacketID;
+% % disp(h.return_nexusPacketID)
+% % closereq(); 
+% end
+% %%
+% function analysis_pushbutton_CallBack(button_object,~,~)
+% h.acquisitionFig = guidata(button_object);
+% guidata(button_object, h.acquisitionFig) % update handles
+% end
+% %%
+% function endSession_pushbutton_CallBack(button_object,~,~)
+% h.acquisitionFig = guidata(button_object);
+% guidata(button_object, h.acquisitionFig) % update handles
+% end
