@@ -32,7 +32,9 @@
 %   - Set Nexus to 'recieve' UDP message and listen over all IP addresses.
 %   - Set Nexus Port as 6610
 %   - Ensure Nexus is 'armed' prior to capture.
-% 
+% .
+
+
 % UDP msg:
 % Nexus requires an xml string to start/stop a capture. Additionally, you 
 % can dictate the trial name, and where in the database it should be saved. 
@@ -44,29 +46,19 @@ clc;
 
 machine_ip = getIPaddress();    % check which machine
 
-if  strcmp(machine_ip, '10.90.20.114')
-    % work desktop machine
-    cd('C:\Users\a1194788\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\')
-elseif strcmp(machine_ip, '10.90.14.67')
-    % gait lab machine
-    cd('C:\Thwaites PhD\Matlab2Nexus_Trigger-Knee-Pain\src\')
-end
+desk_ip = '1.2.3.4';
+desk_path = 'C:\Users\user\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\';
 
-% switch machine_ip
-%     
-%     case '10.90.20.114'     % work desktop machine
-%         cd('C:\Users\a1194788\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\')
-%         
-%     case '10.90.14.67'      % gait lab machine
-%         cd('C:\Thwaites PhD\Matlab2Nexus_Trigger-Knee-Pain\src\')
-%         
-%     case '192.168.43.123'   % laptop on phone hotspot
-%         cd('C:\Users\simon\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\')
-%         
-%     case '129.127.137.153'  % laptop on UoA wireless
-%         cd('C:\Users\simon\Box\01. PhD\10. Git\Matlab2Nexus_Trigger\src\')
-%         
-% end
+lab_ip = '5.6.7.8';
+lab_path = 'C:\Thwaites PhD\Matlab2Nexus_Trigger-Knee-Pain\src\';
+
+if  strcmp(machine_ip, desk_ip)
+    % work desktop machine
+    cd(desk_path)
+elseif strcmp(machine_ip, lab_ip)
+    % gait lab machine
+    cd(lab_path)
+end
 
 nexusPacketID = 0; % initialise for incrementing UDP packets (required for Nexus)
 anotherCapture = true; 
@@ -78,7 +70,9 @@ while anotherCapture
     % check/male directories
     pathList = makeDirectories(sessionString);
     
-    % generate trial list
+    % generate trial list, add extras for rand
+    trial_list = generate_trial_list();
+    trial_list = generate_trial_list();
     trial_list = generate_trial_list();
     
     % warnings to set Vicon Nexus database

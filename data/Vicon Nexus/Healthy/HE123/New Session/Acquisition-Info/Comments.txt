@@ -1,7 +1,0 @@
-~~~
-SessionID: 
-HE123
-~~~
-Comments: 
-marker fell off gait 1
-~~~
